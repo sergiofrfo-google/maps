@@ -333,20 +333,24 @@
   // -------------------------------
   // 6. Export: KML (same)
   // -------------------------------
-function downloadKML(itinerary, city, country){
-  // ---- helpers ----
-  const xmlEscape = (s="") => String(s)
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&apos;");
-  const cdata = (s="") => "<![CDATA[" + String(s).replace(/]]>/g, "]]]]><![CDATA[>") + "]]>";
+function downloadKML(itinerary, city, country) {
+  // --- helpers ---
+  const xmlEscape = (s = "") =>
+    String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&apos;");
 
-  // normalize & sort days
-  const days = [...new Set((itinerary||[]).map(i => Number(i.day)))]
+  // Wrap safely in CDATA
+  const wrapCDATA = (s = "") =>
+    "<![CDATA[" + String(s).replace(/]]>/g, "]]]]><![CDATA[>") + "]]>";
+
+  // Collect unique days sorted
+  const days = [...new Set((itinerary || []).map(i => Number(i.day)))]
     .filter(Number.isFinite)
-    .sort((a,b)=>a-b);
+    .sort((a, b) => a - b);
 
   const docName = `${city || "Itinerary"}${country ? ", " + country : ""} Itinerary`;
 
@@ -365,8 +369,10 @@ function downloadKML(itinerary, city, country){
         const lat = Number(s.lat), lng = Number(s.lng);
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
-        const nm  = `${s.time ? s.time + " — " : ""}${s.name || ""}`;
-        const desc = s.description ? `<description>${cdata(s.description)}</description>` : "";
+        const nm = `${s.time ? s.time + " — " : ""}${s.name || ""}`;
+        const desc = s.description
+          ? `<description>${wrapCDATA(s.description)}</description>`
+          : "";
 
         parts.push(`<Placemark>`);
         parts.push(`<name>${xmlEscape(nm)}</name>`);
@@ -381,14 +387,18 @@ function downloadKML(itinerary, city, country){
   parts.push(`</Document></kml>`);
   const kml = parts.join("");
 
-  const blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml;charset=UTF-8" });
+  // Download
+  const blob = new Blob([kml], {
+    type: "application/vnd.google-earth.kml+xml;charset=UTF-8"
+  });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = ((city || "itinerary") + (country ? "_" + country : "")).replace(/\s+/g,'_') + ".kml";
+  a.download = ((city || "itinerary") + (country ? "_" + country : "")).replace(/\s+/g, "_") + ".kml";
   a.click();
-  setTimeout(()=>URL.revokeObjectURL(url), 1500);
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
+
 
   window.downloadKML = downloadKML;
 

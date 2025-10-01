@@ -257,7 +257,7 @@
           if (currentInfoWindow && currentInfoWindow !== info) currentInfoWindow.close();
           info.open({ map, anchor:m, shouldFocus:false }); currentInfoWindow = info;
         };
-        m.addEventListener("click", open);
+        m.addListener("click", open);
         if (CAN_HOVER) m.addListener("mouseover", open);
 
         markers.push(m);

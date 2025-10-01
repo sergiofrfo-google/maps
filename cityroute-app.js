@@ -333,32 +333,63 @@
   // -------------------------------
   // 6. Export: KML (same)
   // -------------------------------
-  function downloadKML(itinerary, city, country){
-    let kml = `<?xml version="1.0"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document>`;
-    kml += `<name>${(city || "Itinerary")}${country ? ", " + country : ""} Itinerary</name>`;
-    
-    itinerary.forEach(s=>{
-      if (typeof s.lat !== "number" || typeof s.lng !== "number") return;
+function downloadKML(itinerary, city, country){
+  // ---- helpers ----
+  const xmlEscape = (s="") => String(s)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&apos;");
+  const cdata = (s="") => "<![CDATA[" + String(s).replace(/]]>/g, "]]]]><![CDATA[>") + "]]>";
 
-      const fullName = `${s.time ? s.time + " — " : ""}${s.name}${city ? ", " + city : ""}${country ? ", " + country : ""}`;
-      const safeDescription = (s.description || "").replace(/[<&>]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+  // normalize & sort days
+  const days = [...new Set((itinerary||[]).map(i => Number(i.day)))]
+    .filter(Number.isFinite)
+    .sort((a,b)=>a-b);
 
-      kml += `<Placemark>
-        <name>${fullName}</name>
-        <description>${safeDescription}</description>
-        <Point><coordinates>${s.lng},${s.lat},0</coordinates></Point>
-      </Placemark>`;
-    });
+  const docName = `${city || "Itinerary"}${country ? ", " + country : ""} Itinerary`;
 
-    kml += `</Document></kml>`;
-    const blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; 
-    a.download = ((city || "itinerary") + (country ? "_" + country : "")).replace(/\s+/g,'_') + ".kml";
-    a.click();
-    setTimeout(()=>URL.revokeObjectURL(url), 1500);
-  }
+  const parts = [];
+  parts.push(`<?xml version="1.0" encoding="UTF-8"?>`);
+  parts.push(`<kml xmlns="http://www.opengis.net/kml/2.2">`);
+  parts.push(`<Document>`);
+  parts.push(`<name>${xmlEscape(docName)}</name>`);
+
+  days.forEach(day => {
+    parts.push(`<Folder><name>${xmlEscape("Day " + day)}</name>`);
+
+    (itinerary || [])
+      .filter(s => Number(s.day) === day)
+      .forEach(s => {
+        const lat = Number(s.lat), lng = Number(s.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+        const nm  = `${s.time ? s.time + " — " : ""}${s.name || ""}`;
+        const desc = s.description ? `<description>${cdata(s.description)}</description>` : "";
+
+        parts.push(`<Placemark>`);
+        parts.push(`<name>${xmlEscape(nm)}</name>`);
+        if (desc) parts.push(desc);
+        parts.push(`<Point><coordinates>${lng},${lat},0</coordinates></Point>`);
+        parts.push(`</Placemark>`);
+      });
+
+    parts.push(`</Folder>`);
+  });
+
+  parts.push(`</Document></kml>`);
+  const kml = parts.join("");
+
+  const blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml;charset=UTF-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = ((city || "itinerary") + (country ? "_" + country : "")).replace(/\s+/g,'_') + ".kml";
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 1500);
+}
+
   window.downloadKML = downloadKML;
 
   // -------------------------------

@@ -1,4 +1,3 @@
-document.addEventListener("DOMContentLoaded", initMap);
 
 let map;
 let markers = [];

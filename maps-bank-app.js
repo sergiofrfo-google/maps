@@ -29,7 +29,7 @@ async function fetchPlaces(city) {
   return data;
 }
 
-function initMap() {
+window.initMap = function() {
   map = new google.maps.Map(document.getElementById("custom-map"), {
     center: { lat: 0, lng: 0 },
     zoom: 2
@@ -37,7 +37,7 @@ function initMap() {
   map.addListener("click", closeCurrentInfo);
   addCustomControls();
   loadMeta();
-}
+};
 
 async function loadMeta() {
   const meta = await fetchMeta();

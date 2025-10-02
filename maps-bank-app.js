@@ -212,3 +212,7 @@ function resetView() {
   markers.forEach(m => bounds.extend(m.getPosition()));
   if (!bounds.isEmpty()) map.fitBounds(bounds);
 }
+// Optional: expose a hook for WordPress loader
+window.initMapsBankUI = function(rootEl) {
+  console.log("MapsBank UI initialized in:", rootEl);
+};

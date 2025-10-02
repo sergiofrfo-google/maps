@@ -1,0 +1,91 @@
+
+  #mv-form {
+    max-width: 720px;
+    margin: auto;
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  }
+  #mv-form h2 {
+    margin-bottom: 16px;
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+  #mv-form label {
+    display: block;
+    margin: 6px 0 4px;
+    font-weight: 600;
+  }
+  #mv-form input[type="text"],
+  #mv-form input[type="number"],
+  #mv-form input[type="email"],
+  #mv-form select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    margin-bottom: 12px;
+  }
+  #mv-form p {
+    margin: 12px 0 6px;
+    font-weight: 600;
+  }
+  #mv-form fieldset {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  #mv-form button {
+    padding: 12px 18px;
+    border: none;
+    border-radius: 10px;
+    background: #111827;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 12px;
+  }
+  #mv-form button:hover {
+    background: #1f2937;
+  }
+
+
+
+<!-- UI STYLES (inherits your site font) -->
+
+  .controls{
+    display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;
+    font-family: inherit;
+  }
+  .controls label{
+    display:flex; flex-direction:column; gap:6px; font-weight:600;
+  }
+  .controls select{
+    min-width: 160px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; font:inherit;
+    background:#fff;
+  }
+  .custom-map-btn{
+    font:inherit; padding:8px 12px; margin:6px; border:1px solid #e5e7eb; border-radius:10px;
+    background:#fff; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.08);
+  }
+  .custom-map-btn:hover{ box-shadow:0 4px 14px rgba(0,0,0,.12); }
+  .custom-map-panel{
+    font-family: inherit; font-size:14px; background:rgba(255,255,255,.95);
+    padding:12px; border-radius:10px; box-shadow:0 6px 18px rgba(0,0,0,.12);
+    max-height: 60vh; overflow:auto;
+  }
+  .custom-map-panel strong{ display:block; margin-bottom:8px; font-size:13px; letter-spacing:.02em; color:#111; }
+  .custom-map-panel label{ display:flex; align-items:center; gap:8px; margin:6px 0; }
+  /* Make the InfoWindow look tighter and use site font */
+  .gm-style, .gm-style .gm-style-iw, .gm-style-iw-d { font-family: inherit !important; }
+  .iw-content{ max-width: 280px; line-height:1.45; }
+  .iw-title{ margin:0 0 6px 0; font-size:16px; font-weight:700; letter-spacing:.01em; }
+  .iw-desc{ margin:0 0 10px 0; font-size:14px; }
+  .iw-tips{ margin:10px 0 0 0; padding-top:10px; border-top:1px solid #eee; }
+  .iw-tips h4{ margin:0 0 6px 0; font-size:13px; font-weight:700; letter-spacing:.02em; }
+  .iw-tips ul{ margin:0; padding-left:18px; }
+  .iw-actions{ display:flex; gap:8px; margin-top:10px; }
+  .iw-actions button{
+    font:inherit; padding:6px 10px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; cursor:pointer;
+    box-shadow:0 1px 4px rgba(0,0,0,.08);
+  }
+  .iw-actions button:hover{ box-shadow:0 2px 8px rgba(0,0,0,.12); }

@@ -205,21 +205,26 @@ ${tipsArr.map(t => `<li>${t}</li>`).join("")}
 
   const actions = `
     <div>
-      <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name || "")}" target="_blank">View on Google Maps</a>
+      <button class="gmaps-btn" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((place.name || '') + ' ' + (place.city || '') + ' ' + (place.country || ''))}','_blank')">
+        View on Google Maps
+      </button>
     </div>
   `;
 
   return `
-    <div class="info-window">
+    <div class="info-window custom-info-window">
       <div class="info-header">
         <h3>${place.name || ""}</h3>
         <span class="info-close" onclick="closeCurrentInfo()">✖</span>
       </div>
-      <p>${place.description || ""}</p>
-      ${tipsHtml}
-      ${actions}
+      <div class="info-body">
+        <p>${place.description || ""}</p>
+        ${tipsHtml}
+        ${actions}
+      </div>
     </div>
   `;
+
 }
 
 

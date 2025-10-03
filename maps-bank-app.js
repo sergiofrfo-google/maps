@@ -184,13 +184,13 @@ function getAnyCase(obj, keys){
   for (const want of keys) if (want.toLowerCase() in lowerMap) return lowerMap[want.toLowerCase()];
   return "";
 }
-function normalizeTips(raw){
+function normalizeTips(raw) {
   if (!raw) return [];
-  if (Array.isArray(raw)) return raw.filter(Boolean).map(String);
-  return String(raw || "")
-    .split(/\r?\n|[|;•]|,/g)
-    .map(s => s.trim())
-    .filter(Boolean);
+  // Split only by newlines, keep commas inside sentences
+  return raw
+    .split(/\r?\n/) 
+    .map(t => t.trim())
+    .filter(t => t.length > 0);
 }
 
 function createInfoContent(place, position) {

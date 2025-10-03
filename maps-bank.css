@@ -57,10 +57,13 @@
   align-items: center;
 }
 
-.info-header h3 {
+.info-window .info-header h3 {
   margin: 0;
-  font-size: 1.1em; /* slightly bigger than tips */
+  font-size: 1.1em !important; /* force smaller title */
+  font-weight: 600;
+  line-height: 1.3;
 }
+
 
 .info-body p {
   margin: 4px 0; /* reduce white space between name and description */

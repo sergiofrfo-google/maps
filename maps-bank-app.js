@@ -1,14 +1,19 @@
-
 let map;
 let markers = [];
-let userLocation = null;   // still used for centering if user taps "Track My Location" (not for directions)
+let userLocation = null;
 let userMarker = null;
-let cityCache = {};
+let cityCache = {};          // in‑memory (session) cache
 let currentInfoWindow = null;
+let categoriesPanel = null;  // reused instead of recreating
+let metaCache = null;        // store meta after first load
 
 const API_URL = "https://script.google.com/macros/s/AKfycbzDePUpGo2LC9VWbUx3YzDJEaNff4aiMpaGtUiZIlbPPkCpTYSXvmzIvwUsk4naq_09/exec";
 const CAN_HOVER = window.matchMedia && window.matchMedia("(hover: hover)").matches;
 
+// version for localStorage city data (bump if data format changes)
+const CACHE_VERSION = "v1";
+
+// Marker icon colors by category (case-insensitive)
 const categoryColors = {
   "top10": "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
   "museums": "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
@@ -16,18 +21,52 @@ const categoryColors = {
   "walking tour": "http://maps.google.com/mapfiles/ms/icons/purple-dot.png"
 };
 
+/* ---------------- Meta & Places Fetching ---------------- */
+
 async function fetchMeta() {
+  // Use prefetch promise if present
+  if (metaCache) return metaCache;
+  if (window.mapsBankMetaPromise) {
+    metaCache = await window.mapsBankMetaPromise;
+    if (metaCache) return metaCache;
+  }
   const res = await fetch(`${API_URL}?mode=meta`);
-  return res.json();
+  metaCache = await res.json();
+  return metaCache;
 }
+
+function loadCachedCity(city) {
+  try {
+    const raw = localStorage.getItem("mapsbank:city:" + CACHE_VERSION + ":" + city);
+    return raw ? JSON.parse(raw) : null;
+  } catch(_) { return null; }
+}
+
+function saveCachedCity(city, data) {
+  try {
+    localStorage.setItem("mapsbank:city:" + CACHE_VERSION + ":" + city, JSON.stringify(data));
+  } catch(_) {}
+}
+
 async function fetchPlaces(city) {
+  if (!city) return [];
   if (cityCache[city]) return cityCache[city];
+
+  const cached = loadCachedCity(city);
+  if (cached) {
+    cityCache[city] = cached;
+    return cached;
+  }
+
   const url = `${API_URL}?mode=places&city=${encodeURIComponent(city)}&categories=all`;
   const res = await fetch(url);
   const data = await res.json();
   cityCache[city] = data;
+  saveCachedCity(city, data);
   return data;
 }
+
+/* ---------------- Map Init ---------------- */
 
 window.initMap = function() {
   map = new google.maps.Map(document.getElementById("custom-map"), {
@@ -39,10 +78,16 @@ window.initMap = function() {
   loadMeta();
 };
 
+/* ---------------- UI: Countries & Cities ---------------- */
+
 async function loadMeta() {
   const meta = await fetchMeta();
+  if (!meta) return;
+
   const countrySelect = document.getElementById("countrySelect");
-  countrySelect.innerHTML = (meta.countries || []).map(c => `<option>${c}</option>`).join("");
+  const countries = meta.countries || [];
+  countrySelect.innerHTML = countries.map(c => `<option>${c}</option>`).join("");
+
   countrySelect.onchange = () => updateCities(meta);
   updateCities(meta);
 }
@@ -56,25 +101,31 @@ function updateCities(meta) {
   updateCategories();
 }
 
+/* ---------------- Categories Panel (Reused) ---------------- */
+
+function getCategoriesPanel() {
+  if (categoriesPanel) return categoriesPanel;
+  categoriesPanel = document.createElement("div");
+  categoriesPanel.classList.add("custom-map-panel");
+  map.controls[google.maps.ControlPosition.TOP_LEFT].push(categoriesPanel);
+  return categoriesPanel;
+}
+
 async function updateCategories() {
   const city = document.getElementById("citySelect").value;
+  if (!city) return;
+
   const places = await fetchPlaces(city);
   const categories = [...new Set(places.map(p => p.category))];
 
-  const container = document.createElement("div");
-  container.classList.add("custom-map-panel");
-  container.innerHTML =
+  const panel = getCategoriesPanel();
+  panel.innerHTML =
     `<strong>Categories</strong>` +
     categories.map(cat =>
-      // none selected by default
-      `<label><input type="checkbox" id="cat-${encodeURIComponent(cat)}"> ${cat}</label>`
+      `<label><input type="checkbox" class="cat-filter" data-cat="${encodeURIComponent(cat)}"> ${cat}</label>`
     ).join("");
 
-  const ctrlArray = map.controls[google.maps.ControlPosition.TOP_LEFT];
-  while (ctrlArray.getLength()) ctrlArray.pop();
-  ctrlArray.push(container);
-
-  container.querySelectorAll("input").forEach(cb =>
+  panel.querySelectorAll(".cat-filter").forEach(cb =>
     cb.addEventListener("change", () => updateMarkers(city))
   );
 
@@ -82,10 +133,20 @@ async function updateCategories() {
   closeCurrentInfo();
 }
 
-function clearMarkers() { markers.forEach(m => m.setMap(null)); markers = []; }
-function closeCurrentInfo(){ if (currentInfoWindow){ currentInfoWindow.close(); currentInfoWindow = null; } }
+/* ---------------- Markers ---------------- */
 
-// --- Tips helpers ---
+function clearMarkers() {
+  markers.forEach(m => m.setMap(null));
+  markers = [];
+}
+
+function closeCurrentInfo() {
+  if (currentInfoWindow) {
+    currentInfoWindow.close();
+    currentInfoWindow = null;
+  }
+}
+
 function getAnyCase(obj, keys){
   const lowerMap = {};
   for (const k in obj) lowerMap[k.toLowerCase()] = obj[k];
@@ -126,10 +187,11 @@ function createInfoContent(place, position) {
 }
 
 async function updateMarkers(city) {
-  clearMarkers(); closeCurrentInfo();
+  clearMarkers();
+  closeCurrentInfo();
 
-  const checked = Array.from(document.querySelectorAll("input[id^='cat-']:checked"))
-    .map(cb => decodeURIComponent(cb.id.replace("cat-", "")));
+  const checked = Array.from(document.querySelectorAll(".cat-filter:checked"))
+    .map(cb => decodeURIComponent(cb.dataset.cat));
   if (checked.length === 0) return;
 
   const places = await fetchPlaces(city);
@@ -168,6 +230,8 @@ async function updateMarkers(city) {
   if (!bounds.isEmpty()) map.fitBounds(bounds);
 }
 
+/* ---------------- Map Controls & Helpers ---------------- */
+
 function addCustomControls() {
   const locationButton = document.createElement("button");
   locationButton.textContent = "📍 Track My Location";
@@ -182,7 +246,6 @@ function addCustomControls() {
   resetButton.addEventListener("click", resetView);
 }
 
-// Optional: keeps the blue dot and centers map, but NOT used for directions
 function trackUserLocation() {
   if (navigator.geolocation) {
     navigator.geolocation.watchPosition(pos => {
@@ -192,13 +255,17 @@ function trackUserLocation() {
           strokeColor:'#4285F4', strokeOpacity:0.8, strokeWeight:2,
           fillColor:'#4285F4', fillOpacity:0.6, map, center:userLocation, radius:20
         });
-      } else { userMarker.setCenter(userLocation); }
-      map.setCenter(userLocation); map.setZoom(15);
+      } else {
+        userMarker.setCenter(userLocation);
+      }
+      map.setCenter(userLocation);
+      map.setZoom(15);
     }, () => alert("Unable to access location"), { enableHighAccuracy: true });
-  } else { alert("Geolocation not supported by your browser"); }
+  } else {
+    alert("Geolocation not supported by your browser");
+  }
 }
 
-// Always use Google Maps' own "My Location" as the origin
 function openGoogleMaps(destLat, destLng, mode="walking") {
   const mapsUrl =
     `https://www.google.com/maps/dir/?api=1&origin=My+Location&destination=${destLat},${destLng}&travelmode=${mode}`;
@@ -211,7 +278,8 @@ function resetView() {
   markers.forEach(m => bounds.extend(m.getPosition()));
   if (!bounds.isEmpty()) map.fitBounds(bounds);
 }
-// Optional: expose a hook for WordPress loader
+
+// Hook for WordPress loader (unchanged)
 window.initMapsBankUI = function(rootEl) {
   console.log("MapsBank UI initialized in:", rootEl);
 };

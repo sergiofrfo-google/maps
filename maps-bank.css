@@ -47,6 +47,7 @@
   #mv-form button:hover {
     background: #1f2937;
   }
+#checkMapsBtn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 
 

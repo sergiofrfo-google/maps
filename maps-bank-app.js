@@ -211,8 +211,10 @@ ${tipsArr.map(t => `<li>${t}</li>`).join("")}
 
   return `
     <div class="info-window">
-      <span style="float:right;cursor:pointer;" onclick="closeCurrentInfo()">✖</span>
-      <h3>${place.name || ""}</h3>
+      <div class="info-header">
+        <h3>${place.name || ""}</h3>
+        <span class="info-close" onclick="closeCurrentInfo()">✖</span>
+      </div>
       <p>${place.description || ""}</p>
       ${tipsHtml}
       ${actions}

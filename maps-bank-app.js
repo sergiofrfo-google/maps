@@ -84,21 +84,49 @@ async function loadMeta() {
   const meta = await fetchMeta();
   if (!meta) return;
 
-  const countrySelect = document.getElementById("countrySelect");
-  const countries = meta.countries || [];
-  countrySelect.innerHTML = countries.map(c => `<option>${c}</option>`).join("");
+      const countrySelect = document.getElementById("countrySelect");
+      const countries = meta.countries || [];
+      countrySelect.innerHTML = countries.map(c => `<option value="${c}">${c}</option>`).join("");
+      
+      // Keep city list in sync AND also eval button state
+      countrySelect.addEventListener("change", () => updateCities(meta));
+      countrySelect.addEventListener("change", toggleButtonState);
+      
+      // Initial city fill
+      updateCities(meta);
+      
+      // Wire up the CTA button
+      const checkMapsBtn = document.getElementById("checkMapsBtn");
+      if (checkMapsBtn) {
+        checkMapsBtn.addEventListener("click", () => {
+          const loadingMessage = document.getElementById("loadingMessage");
+          if (loadingMessage) loadingMessage.style.display = "block";
+      
+          // Load categories now (on demand)
+          updateCategories().then(() => {
+            if (loadingMessage) loadingMessage.style.display = "none";
+          });
+        });
+      }
 
-  countrySelect.onchange = () => updateCities(meta);
-  updateCities(meta);
 }
 
 function updateCities(meta) {
   const country = document.getElementById("countrySelect").value;
   const cities = (meta.cities && meta.cities[country]) ? meta.cities[country] : [];
   const citySelect = document.getElementById("citySelect");
-  citySelect.innerHTML = cities.map(c => `<option>${c}</option>`).join("");
-  citySelect.onchange = updateCategories;
-  updateCategories();
+  citySelect.innerHTML = cities.map(c => `<option value="${c}">${c}</option>`).join("");
+  
+  // Do NOT auto-load categories; just update the button state
+  citySelect.onchange = toggleButtonState;
+  toggleButtonState();
+
+}
+function toggleButtonState() {
+  const country = document.getElementById("countrySelect")?.value;
+  const city = document.getElementById("citySelect")?.value;
+  const btn = document.getElementById("checkMapsBtn");
+  if (btn) btn.disabled = !(country && city);
 }
 
 /* ---------------- Categories Panel (Reused) ---------------- */

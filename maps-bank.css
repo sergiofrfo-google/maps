@@ -59,11 +59,36 @@
 
 .info-header h3 {
   margin: 0;
+  font-size: 1.1em; /* slightly bigger than tips */
+}
+
+.info-body p {
+  margin: 4px 0; /* reduce white space between name and description */
 }
 
 .info-close {
   cursor: pointer;
 }
+
+.gmaps-btn {
+  margin-top: 6px;
+  padding: 6px 12px;
+  border: none;
+  background-color: #4285F4; /* Google blue */
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.gmaps-btn:hover {
+  background-color: #3367d6;
+}
+
+/* hide Google Maps default close (so only our custom X shows) */
+.gm-ui-hover-effect {
+  display: none !important;
+}
+
 
 
 <!-- UI STYLES (inherits your site font) -->

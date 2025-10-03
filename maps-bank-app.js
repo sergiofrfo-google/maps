@@ -149,9 +149,10 @@ async function updateCategories() {
   const panel = getCategoriesPanel();
   panel.innerHTML =
     `<strong>Categories</strong>` +
-    categories.map(cat =>
-      `<label><input type="checkbox" class="cat-filter" data-cat="${encodeURIComponent(cat)}"> ${cat}</label>`
-    ).join("");
+    categories.map(cat => {
+      const checked = (cat.toLowerCase() === "top10") ? "checked" : "";
+      return `<label><input type="checkbox" class="cat-filter" data-cat="${encodeURIComponent(cat)}" ${checked}> ${cat}</label>`;
+    }).join("");
 
   panel.querySelectorAll(".cat-filter").forEach(cb =>
     cb.addEventListener("change", () => updateMarkers(city))

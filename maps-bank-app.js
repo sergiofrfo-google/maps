@@ -153,7 +153,9 @@ async function updateCategories() {
       const checked = (cat.toLowerCase() === "top10") ? "checked" : "";
       return `<label><input type="checkbox" class="cat-filter" data-cat="${encodeURIComponent(cat)}" ${checked}> ${cat}</label>`;
     }).join("");
-
+    // Show markers for Top10 immediately
+    updateMarkers(city);
+  
   panel.querySelectorAll(".cat-filter").forEach(cb =>
     cb.addEventListener("change", () => updateMarkers(city))
   );

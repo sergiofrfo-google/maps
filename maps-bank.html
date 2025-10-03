@@ -5,6 +5,16 @@
   <label>City:
     <select id="citySelect"></select>
   </label>
+  
+  <!-- New: CTA button (disabled until both dropdowns are set) -->
+  <button id="checkMapsBtn" disabled>Check Maps</button>
+  
+  <!-- New: loading message -->
+  <div id="loadingMessage" style="display:none; margin:8px 0; font-weight:600;">
+    Loading maps, please wait…
+  </div>
+  
   <div id="categories"></div>
+
 </div>
 <div id="custom-map" style="width:100%; height:500px; border-radius:12px; margin-top:20px;"></div>

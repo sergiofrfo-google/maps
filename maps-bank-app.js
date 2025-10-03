@@ -196,26 +196,30 @@ function normalizeTips(raw){
 function createInfoContent(place, position) {
   const rawTips = getAnyCase(place, ["tips","advice","hints"]);
   const tipsArr = normalizeTips(rawTips);
-  const tipsHtml = tipsArr.length
-    ? `<div class="iw-tips"><h4>Tips</h4><ul>${tipsArr.map(t => `<li>${t}</li>`).join("")}</ul></div>`
-    : "";
+  const tipsHtml = tipsArr.length ? `
+<p><strong>Tips</strong></p>
+<ul>
+${tipsArr.map(t => `<li>${t}</li>`).join("")}
+</ul>
+` : "";
 
   const actions = `
-    <div class="iw-actions">
-      <button onclick="openGoogleMaps(${position.lat}, ${position.lng}, 'walking')">🚶 Walking</button>
-      <button onclick="openGoogleMaps(${position.lat}, ${position.lng}, 'driving')">🚗 Driving</button>
+    <div>
+      <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name || "")}" target="_blank">View on Google Maps</a>
     </div>
   `;
 
   return `
-    <div class="iw-content">
-      <div class="iw-title">${place.name || ""}</div>
-      <div class="iw-desc">${place.description || ""}</div>
+    <div class="info-window">
+      <span style="float:right;cursor:pointer;" onclick="closeCurrentInfo()">✖</span>
+      <h3>${place.name || ""}</h3>
+      <p>${place.description || ""}</p>
       ${tipsHtml}
       ${actions}
     </div>
   `;
 }
+
 
 async function updateMarkers(city) {
   clearMarkers();

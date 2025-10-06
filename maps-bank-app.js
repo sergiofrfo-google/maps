@@ -8,6 +8,7 @@ let categoriesPanel = null;  // reused instead of recreating
 let metaCache = null;        // store meta after first load
 
 const API_URL = "https://script.google.com/macros/s/AKfycbzDePUpGo2LC9VWbUx3YzDJEaNff4aiMpaGtUiZIlbPPkCpTYSXvmzIvwUsk4naq_09/exec";
+const TIPS_API_URL = "https://script.google.com/macros/s/AKfycbzRXtrf0rMn6KPcOQvtvavtjvbn7wHFKmNg5zDCeftyV1mwe2TlxocM9CkOZryK5M0U/exec";
 const CAN_HOVER = window.matchMedia && window.matchMedia("(hover: hover)").matches;
 
 // version for localStorage city data (bump if data format changes)
@@ -238,6 +239,53 @@ function getCategoryColor(cat) {
   return map[(cat || "").toLowerCase()] || "#555";
 }
 
+let lastTipsKey = null;
+
+async function loadCityTips(city, country) {
+  if (!city) return;
+  const key = `${city.toLowerCase()}|${(country || "").toLowerCase()}`;
+  if (key === lastTipsKey) return; // do nothing if only categories toggled
+  lastTipsKey = key;
+
+  const tipsBox = document.getElementById("cityTips");
+  if (tipsBox) tipsBox.innerHTML = `<p class="city-tips-loading">Loading city tips…</p>`;
+
+  try {
+    const url = `${TIPS_API_URL}?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country || "")}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    renderCityTips(data);
+  } catch (err) {
+    const tb = document.getElementById("cityTips");
+    if (tb) tb.innerHTML = "";
+  }
+}
+
+function renderCityTips(data) {
+  const tipsBox = document.getElementById("cityTips");
+  if (!tipsBox || !data || !Array.isArray(data.sections)) return;
+
+  if (!data.sections.length) {
+    tipsBox.innerHTML = ""; // no tips for this city
+    return;
+  }
+
+  tipsBox.innerHTML = `
+    <div class="city-tips">
+      <h3 class="city-tips-header">City Tips</h3>
+      ${data.sections.map(sec => `
+        <div class="city-tips-section">
+          <h4 class="city-tips-title">${sec.title}</h4>
+          <ul class="city-tips-list">
+            ${(sec.items || []).map(item => `
+              <li><span class="tip-emoji">💡</span><span>${item}</span></li>
+            `).join("")}
+          </ul>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
 
 
 async function updateMarkers(city) {
@@ -291,6 +339,11 @@ async function updateMarkers(city) {
         const cat = p.category || "Other";
         if (!grouped[cat]) grouped[cat] = [];
         grouped[cat].push(p);
+        
+    const country = document.getElementById("countrySelect")?.value || "";
+    loadCityTips(city, country)
+        
+        
       });
 
       listContainer.innerHTML = Object.keys(grouped).map(cat => {
@@ -302,7 +355,7 @@ async function updateMarkers(city) {
               ${grouped[cat].map(p => `
                 <li>
                   <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" class="place-icon">📍</a>
-                  <strong>${p.name}</strong><br>
+                  <strong>${p.name}</strong>
                   <span class="place-desc">${p.description || ""}</span>
                 </li>
               `).join("")}

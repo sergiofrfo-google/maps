@@ -92,6 +92,35 @@
   display: none !important;
 }
 
+#placesList {
+  margin-top: 20px;
+  padding: 10px;
+}
+
+.place-item {
+  border-bottom: 1px solid #ddd;
+  padding: 6px 0;
+}
+
+.place-icon {
+  margin-right: 6px;
+}
+
+.place-name {
+  font-weight: 600;
+  color: #1a73e8;
+  text-decoration: none;
+}
+
+.place-name:hover {
+  text-decoration: underline;
+}
+
+.place-desc {
+  margin: 2px 0 6px 22px;
+  color: #444;
+  font-size: 0.9em;
+}
 
 
 <!-- UI STYLES (inherits your site font) -->

@@ -281,20 +281,23 @@ async function updateMarkers(city) {
         grouped[cat].push(p);
       });
 
-      listContainer.innerHTML = Object.keys(grouped).map(cat => `
-        <div class="category-section">
-          <h3 class="category-title">${cat}</h3>
-          <ul class="category-list">
-            ${grouped[cat].map(p => `
-              <li>
-                <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" class="place-icon">📍</a>
-                <strong>${p.name}</strong><br>
-                <span class="place-desc">${p.description || ""}</span>
-              </li>
-            `).join("")}
-          </ul>
-        </div>
-      `).join("");
+      listContainer.innerHTML = Object.keys(grouped).map(cat => {
+        const color = getCategoryColor(cat); // reuse marker color
+        return `
+          <div class="category-section">
+            <h3 class="category-title" style="color:${color};">${cat}</h3>
+            <ul class="category-list">
+              ${grouped[cat].map(p => `
+                <li>
+                  <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" class="place-icon">📍</a>
+                  <strong>${p.name}</strong><br>
+                  <span class="place-desc">${p.description || ""}</span>
+                </li>
+              `).join("")}
+            </ul>
+          </div>
+        `;
+      }).join("");
     }
 }
 

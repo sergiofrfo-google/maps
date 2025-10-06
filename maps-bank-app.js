@@ -269,8 +269,21 @@ async function updateMarkers(city) {
     bounds.extend(position);
   });
 
-  if (!bounds.isEmpty()) map.fitBounds(bounds);
+    if (!bounds.isEmpty()) map.fitBounds(bounds);
+
+    // --- Build list below the map ---
+    const listContainer = document.getElementById("placesList");
+    if (listContainer) {
+      listContainer.innerHTML = filtered.map(p => `
+        <div class="place-item">
+          <span class="place-icon">📍</span>
+          <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" class="place-name">${p.name}</a>
+          <p class="place-desc">${p.description || ""}</p>
+        </div>
+      `).join("");
+    }
 }
+
 
 /* ---------------- Map Controls & Helpers ---------------- */
 

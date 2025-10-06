@@ -227,6 +227,18 @@ ${tipsArr.map(t => `<li>${t}</li>`).join("")}
 
 }
 
+// Utility: match category with color used for markers
+function getCategoryColor(cat) {
+  const map = {
+    "top10": "#e74c3c",          // red
+    "museums": "#2980b9",        // blue
+    "instagramable": "#27ae60",  // green
+    "walking tour": "#8e44ad"    // purple
+  };
+  return map[(cat || "").toLowerCase()] || "#555";
+}
+
+
 
 async function updateMarkers(city) {
   clearMarkers();

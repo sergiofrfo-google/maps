@@ -97,28 +97,39 @@
   padding: 10px;
 }
 
+.category-section {
+  margin-bottom: 20px;
+}
+
+.category-title {
+  font-size: 1.1em;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+}
+
 .place-item {
-  border-bottom: 1px solid #ddd;
-  padding: 6px 0;
+  padding: 2px 0;
 }
 
 .place-icon {
+  text-decoration: none;
   margin-right: 6px;
+  font-size: 1.1em;
+}
+
+.place-icon:hover {
+  opacity: 0.7;
 }
 
 .place-name {
-  font-weight: 600;
-  color: #1a73e8;
-  text-decoration: none;
-}
-
-.place-name:hover {
-  text-decoration: underline;
+  font-weight: 500;
+  color: #222;
 }
 
 .place-desc {
   margin: 2px 0 6px 22px;
-  color: #444;
+  color: #555;
   font-size: 0.9em;
 }
 

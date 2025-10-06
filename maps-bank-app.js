@@ -284,18 +284,19 @@ async function updateMarkers(city) {
       listContainer.innerHTML = Object.keys(grouped).map(cat => `
         <div class="category-section">
           <h3 class="category-title">${cat}</h3>
-          ${grouped[cat].map(p => `
-            <div class="place-item">
-              <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" class="place-icon">📍</a>
-              <span class="place-name">${p.name}</span>
-              <p class="place-desc">${p.description || ""}</p>
-            </div>
-          `).join("")}
+          <ul class="category-list">
+            ${grouped[cat].map(p => `
+              <li>
+                <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" class="place-icon">📍</a>
+                <strong>${p.name}</strong><br>
+                <span class="place-desc">${p.description || ""}</span>
+              </li>
+            `).join("")}
+          </ul>
         </div>
       `).join("");
     }
 }
-
 
 
 /* ---------------- Map Controls & Helpers ---------------- */

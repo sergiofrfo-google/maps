@@ -135,6 +135,48 @@
   margin-left: 22px;
 }
 
+/* City Tips */
+#cityTips {
+  margin-top: 24px;
+  padding: 0 10px;
+}
+
+.city-tips-header {
+  font-size: 1.2em;
+  font-weight: 700;
+  margin: 0 0 10px 0;
+  color: #111;
+}
+
+.city-tips-section {
+  margin-bottom: 16px;
+}
+
+.city-tips-title {
+  font-size: 1em;
+  font-weight: 600;
+  margin: 8px 0 6px 0;
+}
+
+.city-tips-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.city-tips-list li {
+  margin: 6px 0;
+  line-height: 1.4;
+}
+
+.tip-emoji {
+  margin-right: 8px;
+}
+
+.city-tips-loading {
+  color: #666;
+  font-size: 0.95em;
+}
 
 <!-- UI STYLES (inherits your site font) -->
 

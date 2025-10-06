@@ -178,6 +178,91 @@
   font-size: 0.95em;
 }
 
+/* === Category cards & 2-column layout === */
+.mb-categories {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  margin-top: 8px;
+}
+@media (min-width: 1024px) {
+  .mb-categories { grid-template-columns: 1fr 1fr; }
+}
+
+.mb-cat {
+  border: 2px solid var(--cat-color);
+  border-radius: 16px;
+  padding: 16px 18px;
+}
+
+.mb-cat-title {
+  margin: 0 0 8px 0;
+  color: var(--cat-color);
+  font-family: "Playfair Display", serif;
+  font-weight: 700;
+  font-size: 28px; /* same feel as your site headings */
+  line-height: 1.2;
+}
+
+/* === Places list === */
+.mb-list { 
+  margin: 0; 
+  padding-left: 24px;   /* keep bullet points like cityroute */
+}
+.mb-place { 
+  margin: 6px 0; 
+}
+.mb-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;            /* tighter gap between name and description */
+  flex-wrap: wrap;     /* prevent huge right-side gaps */
+}
+
+/* link on the pin & on the title */
+.mb-emoji { 
+  text-decoration: none; 
+}
+.mb-title {
+  font-weight: 600;
+  text-decoration: underline;    /* look like a link */
+  color: inherit;                /* stay black */
+}
+.mb-title:hover,
+.mb-emoji:hover {
+  opacity: .75;                  /* subtle hover */
+  text-decoration-thickness: 2px;
+}
+
+.mb-desc {
+  font-style: normal;
+}
+
+/* InfoWindow small tweaks (keeps your earlier structure) */
+.info-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.info-header h3 {
+  margin: 0;
+  line-height: 1.2;
+}
+.info-close {
+  margin-left: auto;
+  cursor: pointer;
+}
+.info-desc { margin: 6px 0 10px; }
+.info-tips-title { font-weight: 700; margin: 10px 0 6px; }
+.info-tips-list { margin: 0; padding-left: 20px; }
+.gmaps-btn {
+  display: inline-block;
+  text-decoration: underline;
+  color: inherit;
+}
+.gmaps-btn:hover { opacity: .75; text-decoration-thickness: 2px; }
+
+
 <!-- UI STYLES (inherits your site font) -->
 
   .controls{

@@ -271,18 +271,31 @@ async function updateMarkers(city) {
 
     if (!bounds.isEmpty()) map.fitBounds(bounds);
 
-    // --- Build list below the map ---
+    // --- Build categorized list below the map ---
     const listContainer = document.getElementById("placesList");
     if (listContainer) {
-      listContainer.innerHTML = filtered.map(p => `
-        <div class="place-item">
-          <span class="place-icon">📍</span>
-          <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" class="place-name">${p.name}</a>
-          <p class="place-desc">${p.description || ""}</p>
+      const grouped = {};
+      filtered.forEach(p => {
+        const cat = p.category || "Other";
+        if (!grouped[cat]) grouped[cat] = [];
+        grouped[cat].push(p);
+      });
+
+      listContainer.innerHTML = Object.keys(grouped).map(cat => `
+        <div class="category-section">
+          <h3 class="category-title">${cat}</h3>
+          ${grouped[cat].map(p => `
+            <div class="place-item">
+              <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" class="place-icon">📍</a>
+              <span class="place-name">${p.name}</span>
+              <p class="place-desc">${p.description || ""}</p>
+            </div>
+          `).join("")}
         </div>
       `).join("");
     }
 }
+
 
 
 /* ---------------- Map Controls & Helpers ---------------- */

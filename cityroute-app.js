@@ -12,7 +12,7 @@
   // Separate endpoint for cities lookup (your deployed Apps Script Web App)
   const CITIES_API_URL = "https://script.google.com/macros/s/AKfycbwGocu75weAKjVd-i-dUG9ecGJQfkRrGlssl6D8FQ18iwcjKOscPmbxdNTXdPtqDOUODw/exec";
   // Static JSON with all countries (hosted on GitHub Pages)
-  const COUNTRIES_URL = "https://sergiofrfo-google.github.io/maps/countries.json";
+  const COUNTRIES_URL = "https://apps.mapvivid.com/countries.json";
 
   async function loadCountries() {
     try {

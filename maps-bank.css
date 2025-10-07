@@ -262,6 +262,74 @@
 }
 .gmaps-btn:hover { opacity: .75; text-decoration-thickness: 2px; }
 
+@media (min-width: 1024px) {
+  #placesList {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+  }
+}
+
+.mb-cat {
+  border: 2px solid currentColor;
+  border-radius: 16px;
+  padding: 16px 18px;
+}
+
+.mb-cat-title {
+  margin: 0 0 8px 0;
+  color: var(--cat-color);
+  font-weight: 700;
+  font-size: 28px;
+}
+
+.mb-list {
+  margin: 0;
+  padding-left: 24px;
+}
+
+.mb-place {
+  margin: 6px 0;
+}
+
+.mb-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mb-emoji {
+  text-decoration: none;
+}
+
+.mb-title {
+  font-weight: 600;
+  text-decoration: underline;
+  color: inherit;
+}
+
+.mb-title:hover,
+.mb-emoji:hover {
+  opacity: .75;
+  text-decoration-thickness: 2px;
+}
+
+.mb-desc {
+  font-style: normal;
+}
+
+.category-list {
+  /* remove any separators if present by theme */
+  list-style-type: disc;
+  padding-left: 24px;
+  margin: 0;
+}
+
+.category-list li {
+  margin: 6px 0;
+  border-bottom: none;
+}
 
 <!-- UI STYLES (inherits your site font) -->
 

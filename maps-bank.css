@@ -199,6 +199,44 @@
   font-size: 0.95em;
 }
 
+/* === Tips integrated with category grid === */
+
+/* Tip cards look like category cards */
+.city-tips-section {
+  border: 2px solid #d0d7de;
+  border-radius: 16px;
+  padding: 16px 18px;
+  background: #fff;
+}
+
+/* Titles inside tips */
+.city-tips-title {
+  font-size: 1em;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #111;
+}
+
+/* List format: no bullets, emoji as bullet */
+.city-tips-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+.city-tips-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 6px 0;
+  line-height: 1.4;
+}
+.city-tips-list .tip-emoji {
+  width: 1.1em;
+  flex: 0 0 1.1em;
+  text-align: center;
+}
+
+
 /* === Category cards & 2-column layout === */
 .mb-categories {
   display: grid;

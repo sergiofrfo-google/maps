@@ -331,6 +331,43 @@
   border-bottom: none;
 }
 
+/* === Force two equal columns for the category boxes (no JS changes) === */
+/* Make the list container a flex grid that wraps */
+#placesList{
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 28px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Each category box takes half width on desktop */
+#placesList .category-section{
+  flex: 1 1 calc(50% - 28px) !important; /* two columns */
+  border: 2px solid currentColor;
+  border-radius: 16px;
+  padding: 16px 18px;
+  background: #fff;
+}
+
+/* Single column on tablets/phones */
+@media (max-width: 1023.98px){
+  #placesList .category-section{ flex: 1 1 100% !important; }
+}
+
+/* Keep your existing visuals */
+#placesList .category-title{ margin: 0 0 8px 0; font-weight: 700; }
+#placesList .category-list{ list-style: disc; padding-left: 24px; margin: 0; }
+#placesList .category-list li{ margin: 8px 0; line-height: 1.4; border-bottom: none; }
+
+/* Title as link (black, underline, hover) if you already switched name to <a class="place-title"> */
+#placesList .place-title{ font-weight: 600; text-decoration: underline; color: inherit; }
+#placesList .place-title:hover{ opacity:.8; text-decoration-thickness: 2px; }
+#placesList .place-icon, #placesList .pinlink{ text-decoration: none; margin-right: 6px; }
+#placesList .place-desc{ font-style: normal; }
+
+
 <!-- UI STYLES (inherits your site font) -->
 
   .controls{

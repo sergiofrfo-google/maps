@@ -247,9 +247,6 @@ async function loadCityTips(city, country) {
   if (key === lastTipsKey) return; // do nothing if only categories toggled
   lastTipsKey = key;
 
-  const tipsBox = document.getElementById("cityTips");
-  if (tipsBox) tipsBox.innerHTML = `<p class="city-tips-loading">Loading city tips…</p>`;
-
   try {
     const url = `${TIPS_API_URL}?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country || "")}`;
     const res = await fetch(url);
@@ -262,31 +259,27 @@ async function loadCityTips(city, country) {
 }
 
 function renderCityTips(data) {
-  const tipsBox = document.getElementById("cityTips");
-  if (!tipsBox || !data || !Array.isArray(data.sections)) return;
+  const listContainer = document.getElementById("placesList");
+  if (!listContainer || !data || !Array.isArray(data.sections)) return;
 
-  if (!data.sections.length) {
-    tipsBox.innerHTML = ""; // no tips for this city
-    return;
-  }
+  // Remove any existing tips cards before re-adding
+  listContainer.querySelectorAll(".city-tips-section").forEach(el => el.remove());
 
-  tipsBox.innerHTML = `
-    <div class="city-tips">
-      <h3 class="city-tips-header">City Tips</h3>
-      ${data.sections.map(sec => `
-        <div class="city-tips-section">
-          <h4 class="city-tips-title">${sec.title}</h4>
-          <ul class="city-tips-list">
-            ${(sec.items || []).map(item => `
-              <li><span class="tip-emoji">💡</span><span>${item}</span></li>
-            `).join("")}
-          </ul>
-        </div>
-      `).join("")}
-    </div>
-  `;
+  // Build HTML for tips as same grid items
+  const tipsHTML = data.sections.map(sec => `
+    <section class="city-tips-section">
+      <h4 class="city-tips-title">${sec.title}</h4>
+      <ul class="city-tips-list">
+        ${(sec.items || []).map(item => `
+          <li><span class="tip-emoji">💡</span><span>${item}</span></li>
+        `).join("")}
+      </ul>
+    </section>
+  `).join("");
+
+  // Append to the same grid (mix with categories)
+  listContainer.insertAdjacentHTML("beforeend", tipsHTML);
 }
-
 
 async function updateMarkers(city) {
   clearMarkers();

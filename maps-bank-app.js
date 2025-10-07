@@ -267,10 +267,12 @@ async function loadCityTips(city, country) {
 
 function renderCityTips(data) {
   const listContainer = document.getElementById("placesList");
-  if (!listContainer || !data || !Array.isArray(data.sections)) return;
+  const gridContainer = listContainer?.querySelector('.mb-categories') || listContainer;
+  if (!gridContainer || !data || !Array.isArray(data.sections)) return;
+
 
   // Remove any existing tips cards (safe re-render on category toggles)
-  listContainer.querySelectorAll(".tip-card").forEach(el => el.remove());
+  gridContainer.querySelectorAll(".tip-card").forEach(el => el.remove());
 
   // Build tips as the same kind of “category-section” cards
   const tipsHTML = data.sections.map(sec => `
@@ -288,7 +290,7 @@ function renderCityTips(data) {
   `).join("");
 
   // Append to the same container so they mix with categories
-  listContainer.insertAdjacentHTML("beforeend", tipsHTML);
+  gridContainer.insertAdjacentHTML("beforeend", tipsHTML);
 }
 
 async function updateMarkers(city) {

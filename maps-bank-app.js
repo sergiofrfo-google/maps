@@ -346,23 +346,25 @@ async function updateMarkers(city) {
         
       });
 
-      listContainer.innerHTML = Object.keys(grouped).map(cat => {
-        const color = getCategoryColor(cat); // reuse marker color
-        return `
-          <div class="category-section">
-            <h3 class="category-title" style="color:${color};">${cat}</h3>
-            <ul class="category-list">
+    listContainer.innerHTML = `
+      <div class="mb-categories">
+        ${Object.keys(grouped).map(cat => `
+          <section class="mb-cat" style="--cat-color:${getCategoryColor(cat)}">
+            <h3 class="mb-cat-title">${cat}</h3>
+            <ul class="mb-list">
               ${grouped[cat].map(p => `
-                <li>
-                  <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" class="place-icon">📍</a>
-                  <strong>${p.name}</strong>
-                  <span class="place-desc">${p.description || ""}</span>
+                <li class="mb-place">
+                  <span class="mb-row">
+                    <a class="mb-emoji" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" rel="noopener">📍</a>
+                    <a class="mb-title" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" rel="noopener">${p.name}</a>
+                    ${p.description ? `<span class="mb-desc"> — ${p.description}</span>` : ``}
+                  </span>
                 </li>
               `).join("")}
             </ul>
-          </div>
-        `;
-      }).join("");
+          </section>
+        `).join("")}
+      </div>`;
     }
 }
 

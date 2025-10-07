@@ -73,19 +73,40 @@
   cursor: pointer;
 }
 
+/* Unified, final styles for the popup button */
 .gmaps-btn {
-  margin-top: 6px;
-  padding: 6px 12px;
-  border: none;
-  background-color: #4285F4; /* Google blue */
-  color: white;
-  border-radius: 4px;
+  display: inline-block;
+  padding: 8px 12px;
+  background: #1a73e8;             /* Google blue */
+  color: #fff !important;           /* force white text */
+  border: 0;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none !important; /* prevent link-style underline */
+  line-height: 1.2;
   cursor: pointer;
+
+  /* smooth, non-jumpy hover without reflow/repaint on siblings */
+  box-shadow: 0 1px 2px rgba(0,0,0,.15);
+  transition: box-shadow .15s ease, transform .15s ease, filter .15s ease;
+  will-change: transform;
+
+  /* mobile polish */
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
 .gmaps-btn:hover {
-  background-color: #3367d6;
+  filter: brightness(0.96);
+  box-shadow: 0 2px 6px rgba(0,0,0,.20);
+  transform: translateY(-1px);
 }
+
+.gmaps-btn:focus-visible {
+  outline: 2px solid #174ea6;       /* accessible focus */
+  outline-offset: 2px;
+}
+
 
 /* hide Google Maps default close (so only our custom X shows) */
 .gm-ui-hover-effect {
@@ -255,12 +276,7 @@
 .info-desc { margin: 6px 0 10px; }
 .info-tips-title { font-weight: 700; margin: 10px 0 6px; }
 .info-tips-list { margin: 0; padding-left: 20px; }
-.gmaps-btn {
-  display: inline-block;
-  text-decoration: underline;
-  color: inherit;
-}
-.gmaps-btn:hover { opacity: .75; text-decoration-thickness: 2px; }
+
 
 @media (min-width: 1024px) {
   #placesList {

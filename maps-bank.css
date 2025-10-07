@@ -454,3 +454,28 @@
     box-shadow:0 1px 4px rgba(0,0,0,.08);
   }
   .iw-actions button:hover{ box-shadow:0 2px 8px rgba(0,0,0,.12); }
+
+/* Tips cards integrated with category grid (mix with categories) */
+.category-section.tip-card { /* inherits border/radius/padding from .category-section */
+  background: #fff;
+}
+
+/* Make tips items look like our custom bullets with the emoji */
+.tips-list {
+  list-style: none;
+  margin: 0;
+  padding-left: 0;
+}
+.tips-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 6px 0;
+  line-height: 1.4;
+}
+.tips-list .tip-emoji {
+  width: 1.1em;
+  flex: 0 0 1.1em;
+  text-align: center;
+}
+

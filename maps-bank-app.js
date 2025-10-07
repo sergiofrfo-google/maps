@@ -240,11 +240,17 @@ function getCategoryColor(cat) {
 }
 
 let lastTipsKey = null;
+let lastTipsData = null;
 
 async function loadCityTips(city, country) {
   if (!city) return;
   const key = `${city.toLowerCase()}|${(country || "").toLowerCase()}`;
-  if (key === lastTipsKey) return; // do nothing if only categories toggled
+  if (key === lastTipsKey && lastTipsData) {
+  // list was rebuilt by category toggle; re-append tips without refetch
+  renderCityTips(lastTipsData);
+  return;
+}
+
   lastTipsKey = key;
 
   try {
@@ -256,28 +262,32 @@ async function loadCityTips(city, country) {
     const tb = document.getElementById("cityTips");
     if (tb) tb.innerHTML = "";
   }
+  lastTipsData = data;
 }
 
 function renderCityTips(data) {
   const listContainer = document.getElementById("placesList");
   if (!listContainer || !data || !Array.isArray(data.sections)) return;
 
-  // Remove any existing tips cards before re-adding
-  listContainer.querySelectorAll(".city-tips-section").forEach(el => el.remove());
+  // Remove any existing tips cards (safe re-render on category toggles)
+  listContainer.querySelectorAll(".tip-card").forEach(el => el.remove());
 
-  // Build HTML for tips as same grid items
+  // Build tips as the same kind of “category-section” cards
   const tipsHTML = data.sections.map(sec => `
-    <section class="city-tips-section">
-      <h4 class="city-tips-title">${sec.title}</h4>
-      <ul class="city-tips-list">
+    <section class="category-section tip-card">
+      <h3 class="category-title">${sec.title}</h3>
+      <ul class="category-list tips-list">
         ${(sec.items || []).map(item => `
-          <li><span class="tip-emoji">💡</span><span>${item}</span></li>
+          <li>
+            <span class="tip-emoji">💡</span>
+            <span>${item}</span>
+          </li>
         `).join("")}
       </ul>
     </section>
   `).join("");
 
-  // Append to the same grid (mix with categories)
+  // Append to the same container so they mix with categories
   listContainer.insertAdjacentHTML("beforeend", tipsHTML);
 }
 

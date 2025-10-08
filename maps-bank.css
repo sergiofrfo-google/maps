@@ -479,3 +479,21 @@
   text-align: center;
 }
 
+/* --- Places: keep title + description on the same line and style link --- */
+#placesList li .place-title a,
+#placesList li a.place-title {
+  display: inline !important;           /* was block/inline-block */
+  color: #000;
+  text-decoration: underline;
+  text-underline-offset: .08em;
+  text-decoration-thickness: 1px;
+}
+
+#placesList li .place-desc {
+  display: inline;                      /* ensure it doesn't break line */
+  margin-left: .5rem;                   /* tighten the gap */
+}
+
+#placesList section.is-hidden {         /* used below by the filter */
+  display: none !important;
+}

@@ -329,7 +329,7 @@ function startPlacePopovers() {
 
   const build = (li) => {
     if (li.querySelector('.place-tip-trigger')) return; // already added
-    const nameLink = li.querySelector('a');
+    const nameLink = li.querySelector('a.place-title');
     if (!nameLink) return;
 
     // Create trigger
@@ -470,17 +470,22 @@ async function updateMarkers(city) {
       const color = getCategoryColor(cat);
       return `
         <section class="category-section" style="--cat-color:${color}">
-          <h3 class="category-title" style="color:${color};">${cat}</h3>
-          <ul class="category-list">
-            ${grouped[cat].map(p => `
-              <li>
-                <a class="pinlink" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((p.name || '') + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" rel="noopener">📍</a>
-                <a class="place-title" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((p.name || '') + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" rel="noopener">${p.name}</a>
-                ${p.description ? ` <span class="place-desc">— ${p.description}</span>` : ``}
-              </li>
-            `).join("")}
-          </ul>
+        <h3 class="category-title" style="color:${color};">${cat}</h3>
+        <ul class="category-list">
+        ${grouped[cat].map(p => `
+        <li data-place-tips="${(() => {
+          const raw = getAnyCase(p, ['tips','advice','hints']);
+          const arr = normalizeTips(raw);
+          return (arr.length ? arr.join(' • ') : '').replace(/"/g,'&quot;');
+        })()}">
+          <a class="pinlink" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" rel="noopener">📍</a>
+          <a class="place-title" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" rel="noopener">${p.name}</a>
+          ${p.description ? ` <span class="place-desc">— ${p.description}</span>` : ``}
+        </li>
+        `).join('')}
+        </ul>
         </section>
+
       `;
     }).join("");
 

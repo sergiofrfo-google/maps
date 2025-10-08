@@ -118,6 +118,7 @@ if (tipsFilterEl) {
 }
 // Apply once in case tips already exist later
 applyTipsFilter();
+startPlacePopovers();
 
 }
 
@@ -320,6 +321,80 @@ function applyTipsFilter() {
     card.style.display = checked.includes(type) ? '' : 'none';
   });
 }
+
+/* ----- Place Popovers: add a 💡 trigger + popover to each place ----- */
+function startPlacePopovers() {
+  const root = document.getElementById('placesList');
+  if (!root) return;
+
+  const build = (li) => {
+    if (li.querySelector('.place-tip-trigger')) return; // already added
+    const nameLink = li.querySelector('a');
+    if (!nameLink) return;
+
+    // Create trigger
+    const trigger = document.createElement('button');
+    trigger.className = 'place-tip-trigger';
+    trigger.type = 'button';
+    trigger.setAttribute('aria-label', `Tips for ${nameLink.textContent.trim()}`);
+    trigger.textContent = '💡';
+
+    // Create popover wrapper
+    const pop = document.createElement('div');
+    pop.className = 'place-tip-popover';
+    pop.innerHTML = `
+      <div class="tip-popover-inner">
+        <button class="tip-popover-close" aria-label="Close">×</button>
+        <div class="tip-popover-content"></div>
+      </div>`;
+
+    // Content: use any per-place tips if present (data attribute), else fall back to the text after the link (description)
+    const content = pop.querySelector('.tip-popover-content');
+    const descNode = [...li.childNodes].find(n => n.nodeType === 3 && /\S/.test(n.nodeValue));
+    const tipsText = li.getAttribute('data-place-tips') || (descNode ? descNode.nodeValue.trim().replace(/^—\s*/, '') : '');
+    content.textContent = tipsText || 'No specific tips for this place. See “Tips” above.';
+
+    // Insert after the place link
+    nameLink.insertAdjacentElement('afterend', trigger);
+    li.appendChild(pop);
+
+    // Interactions (hover + click + close X + outside click)
+    const open = () => { pop.classList.add('open'); };
+    const close = () => { pop.classList.remove('open'); };
+
+    let hoverTimer = null;
+    trigger.addEventListener('mouseenter', () => { hoverTimer = setTimeout(open, 60); });
+    trigger.addEventListener('mouseleave', () => { clearTimeout(hoverTimer); setTimeout(() => { if (!pop.matches(':hover')) close(); }, 80); });
+    pop.addEventListener('mouseleave', close);
+
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      pop.classList.toggle('open');
+    });
+    pop.querySelector('.tip-popover-close').addEventListener('click', (e) => {
+      e.stopPropagation();
+      close();
+    });
+    document.addEventListener('click', (e) => {
+      if (!pop.contains(e.target) && e.target !== trigger) close();
+    }, { passive: true });
+  };
+
+  const scan = () => {
+    const items = root.querySelectorAll('.category-section:not(.tip-card) .category-list li');
+    items.forEach((li) => {
+      // Ensure li is positioned for absolute popover
+      if (getComputedStyle(li).position === 'static') li.style.position = 'relative';
+      build(li);
+    });
+  };
+
+  // Initial scan + watch for re-renders
+  const mo = new MutationObserver(() => scan());
+  mo.observe(root, { childList: true, subtree: true });
+  scan();
+}
+
 
 
 async function updateMarkers(city) {

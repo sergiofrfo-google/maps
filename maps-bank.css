@@ -525,3 +525,35 @@
 #tips-filter label:hover { background: #e9e9e9; }
 #tips-filter input[type="checkbox"] { transform: scale(1.1); }
 
+/* Place tips trigger + popover */
+.place-tip-trigger{
+  margin: 0 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.place-tip-popover{
+  position: absolute;
+  z-index: 1000;
+  top: 24px;               /* drop just below the row */
+  left: 0;                 /* align with the name */
+  display: none;
+  max-width: 320px;
+  background: #fff;
+  border: 1px solid #ddd;
+  box-shadow: 0 8px 22px rgba(0,0,0,.15);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.place-tip-popover.open{ display: block; }
+
+.tip-popover-inner{ position: relative; }
+.tip-popover-close{
+  position: absolute; top: 6px; right: 8px;
+  border: 0; background: transparent; cursor: pointer; font-size: 18px;
+}
+.place-tip-trigger { font-size: 14px; margin: 0 4px; }
+

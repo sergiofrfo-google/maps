@@ -351,25 +351,37 @@ async function updateMarkers(city) {
         
       });
 
-    listContainer.innerHTML = `
-      <div class="mb-categories">
-        ${Object.keys(grouped).map(cat => `
-          <section class="mb-cat" style="--cat-color:${getCategoryColor(cat)}">
-            <h3 class="mb-cat-title">${cat}</h3>
-            <ul class="mb-list">
-              ${grouped[cat].map(p => `
-                <li class="mb-place">
-                  <span class="mb-row">
-                    <a class="mb-emoji" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" rel="noopener">📍</a>
-                    <a class="mb-title" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" rel="noopener">${p.name}</a>
-                    ${p.description ? `<span class="mb-desc"> — ${p.description}</span>` : ``}
-                  </span>
-                </li>
-              `).join("")}
-            </ul>
-          </section>
-        `).join("")}
-      </div>`;
+    // ✅ Reuse existing grid container and keep tips visible
+    let grid = listContainer.querySelector('.mb-categories');
+    if (!grid) {
+      listContainer.innerHTML = `<div class="mb-categories"></div>`;
+      grid = listContainer.querySelector('.mb-categories');
+    }
+
+    // Remove ONLY category cards (keep .tip-card sections intact)
+    grid.querySelectorAll('.category-section:not(.tip-card)').forEach(el => el.remove());
+
+    // Build and append new category cards
+    const catsHTML = Object.keys(grouped).map(cat => {
+      const color = getCategoryColor(cat);
+      return `
+        <section class="category-section" style="--cat-color:${color}">
+          <h3 class="category-title" style="color:${color};">${cat}</h3>
+          <ul class="category-list">
+            ${grouped[cat].map(p => `
+              <li>
+                <a class="pinlink" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((p.name || '') + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" rel="noopener">📍</a>
+                <a class="place-title" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((p.name || '') + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" rel="noopener">${p.name}</a>
+                ${p.description ? ` <span class="place-desc">— ${p.description}</span>` : ``}
+              </li>
+            `).join("")}
+          </ul>
+        </section>
+      `;
+    }).join("");
+
+    grid.insertAdjacentHTML('beforeend', catsHTML);
+
     }
 }
 

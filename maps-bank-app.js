@@ -110,9 +110,12 @@ async function loadMeta() {
         });
       }
 // Wire up the Tips filter bar (outside the map)
-document.querySelectorAll('#tips-filter .tip-toggle').forEach(cb => {
-  cb.addEventListener('change', applyTipsFilter);
-});
+const tipsFilterEl = document.getElementById('tips-filter');
+if (tipsFilterEl) {
+  tipsFilterEl.addEventListener('change', (e) => {
+    if (e.target && e.target.matches('input[type="checkbox"]')) applyTipsFilter();
+  });
+}
 // Apply once in case tips already exist later
 applyTipsFilter();
 

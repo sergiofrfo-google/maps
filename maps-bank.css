@@ -501,13 +501,17 @@
 #tips-filter {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 10px 12px;
   align-items: center;
-  justify-content: flex-start;
-  margin: 15px 0 20px 0;
-  font-weight: 500;
+  justify-content: center;          /* center the whole group */
+  padding: 10px 12px;               /* space inside the frame */
+  margin: 15px auto 20px;           /* center the frame */
+  border: 2px solid #222;           /* card-like border */
+  border-radius: 14px;              /* rounded corners like cards */
+  background: #fff;
+  width: fit-content;               /* frame wraps the chips */
+  max-width: 100%;
 }
-
 #tips-filter label {
   display: flex;
   align-items: center;
@@ -518,11 +522,6 @@
   cursor: pointer;
   transition: background 0.2s ease;
 }
+#tips-filter label:hover { background: #e9e9e9; }
+#tips-filter input[type="checkbox"] { transform: scale(1.1); }
 
-#tips-filter label:hover {
-  background: #e9e9e9;
-}
-
-#tips-filter input[type="checkbox"] {
-  transform: scale(1.1);
-}

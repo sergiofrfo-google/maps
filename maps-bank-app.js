@@ -305,7 +305,7 @@ applyTipsFilter();
 
 /* ----- Tips Filter: show/hide .tip-card by #tips-filter state ----- */
 function applyTipsFilter() {
-  const checked = Array.from(document.querySelectorAll('#tips-filter .tip-toggle:checked'))
+  const checked = Array.from(document.querySelectorAll('#tips-filter input[type="checkbox"]:checked'))
     .map(el => (el.value || '').trim());
   const cards = document.querySelectorAll('.tip-card');
   if (!cards.length) return;

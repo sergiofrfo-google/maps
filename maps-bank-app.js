@@ -380,8 +380,17 @@ async function updateMarkers(city) {
       `;
     }).join("");
 
-    grid.insertAdjacentHTML('beforeend', catsHTML);
-
+    const firstTip = grid.querySelector('.tip-card');
+    if (firstTip) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = catsHTML;
+      while (tmp.firstElementChild) {
+        grid.insertBefore(tmp.firstElementChild, firstTip);
+      }
+    } else {
+      grid.insertAdjacentHTML('beforeend', catsHTML);
+    }
+      
     }
 }
 

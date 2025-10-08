@@ -388,11 +388,12 @@
 
 #placesList .category-list li,
 #placesList .mb-list li {
-  display: flex;             /* align emoji + text on one line */
+  display: flex;
   align-items: baseline;
-  gap: 8px;                  /* space between emoji and text */
+  gap: 8px;
   margin: 8px 0;
   line-height: 1.4;
+  position: relative;   /* anchor .place-tip-popover */
 }
 
 /* the clickable emoji/pin becomes the "bullet" */
@@ -531,9 +532,13 @@
   border: none;
   background: transparent;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 13px;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
 }
+
 
 .place-tip-popover{
   position: absolute;
@@ -555,5 +560,5 @@
   position: absolute; top: 6px; right: 8px;
   border: 0; background: transparent; cursor: pointer; font-size: 18px;
 }
-.place-tip-trigger { font-size: 14px; margin: 0 4px; }
+.place-tip-trigger { font-size: 13px; margin: 0 4px; }
 

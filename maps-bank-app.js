@@ -109,6 +109,12 @@ async function loadMeta() {
           });
         });
       }
+// Wire up the Tips filter bar (outside the map)
+document.querySelectorAll('#tips-filter .tip-toggle').forEach(cb => {
+  cb.addEventListener('change', applyTipsFilter);
+});
+// Apply once in case tips already exist later
+applyTipsFilter();
 
 }
 
@@ -276,7 +282,7 @@ function renderCityTips(data) {
 
   // Build tips as the same kind of “category-section” cards
   const tipsHTML = data.sections.map(sec => `
-    <section class="category-section tip-card">
+    <section class="category-section tip-card" data-tip-type="${sec.title}">
       <h3 class="category-title">${sec.title}</h3>
       <ul class="category-list tips-list">
         ${(sec.items || []).map(item => `
@@ -290,8 +296,28 @@ function renderCityTips(data) {
   `).join("");
 
   // Append to the same container so they mix with categories
-  gridContainer.insertAdjacentHTML("beforeend", tipsHTML);
+gridContainer.insertAdjacentHTML("beforeend", tipsHTML);
+applyTipsFilter();
 }
+
+/* ----- Tips Filter: show/hide .tip-card by #tips-filter state ----- */
+function applyTipsFilter() {
+  const checked = Array.from(document.querySelectorAll('#tips-filter .tip-toggle:checked'))
+    .map(el => (el.value || '').trim());
+  const cards = document.querySelectorAll('.tip-card');
+  if (!cards.length) return;
+  // If nothing checked, hide all tips
+  if (checked.length === 0) {
+    cards.forEach(card => { card.style.display = 'none'; });
+    return;
+  }
+  // Otherwise show only matching sections
+  cards.forEach(card => {
+    const type = (card.getAttribute('data-tip-type') || '').trim();
+    card.style.display = checked.includes(type) ? '' : 'none';
+  });
+}
+
 
 async function updateMarkers(city) {
   clearMarkers();

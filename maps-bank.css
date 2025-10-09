@@ -376,7 +376,14 @@
 #placesList .place-title{ font-weight: 600; text-decoration: underline; color: inherit; }
 #placesList .place-title:hover{ opacity:.8; text-decoration-thickness: 2px; }
 #placesList .place-icon, #placesList .pinlink{ text-decoration: none; margin-right: 6px; }
-#placesList .place-desc{ font-style: normal; }
+#placesList .place-desc{
+  font-style: normal;
+  flex: 1 1 auto;    /* use remaining space on the row */
+  min-width: 0;      /* allow wrapping inside this column */
+  overflow-wrap: anywhere;
+  margin-left: 6px;
+}
+
 
 /* == Remove native bullets and use the emoji/link as the bullet == */
 #placesList .category-list,
@@ -528,7 +535,7 @@
 
 /* Place tips trigger + popover */
 .place-tip-trigger{
-  margin: 0 6px;
+  margin: 0;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -563,40 +570,25 @@
   position: absolute; top: 6px; right: 8px;
   border: 0; background: transparent; cursor: pointer; font-size: 18px;
 }
-.place-tip-trigger { font-size: 13px; margin: 0 4px; }
+
 .place-title-wrap{
   display: inline-flex;
   align-items: baseline;
-  gap: 2px;              /* tighter space */
+  gap: 0px;              /* tighter space */
   white-space: nowrap;   /* keep name + icon together */
   flex: 0 0 auto;        /* don't stretch or wrap inside */
 }
-#placesList .place-desc{ margin-left: 6px; }
+
 .tip-popover-title{
   font-weight: 600;
   margin: 0 0 6px 0;
 }
 
 .tip-popover-list{
-  list-style: disc;          /* real bullets */
+  list-style: disc !important;   /* force bullets even if a reset removes them */
+  list-style-position: outside;
   margin: 0;
   padding-left: 1.25rem;     /* indent bullets */
-}
-
-.tip-popover-list li{
-  margin: 6px 0;
-  line-height: 1.45;
-}
-
-.tip-popover-title{
-  font-weight: 600;
-  margin: 0 0 6px 0;
-}
-
-.tip-popover-list{
-  list-style: disc;
-  margin: 0;
-  padding-left: 1.25rem;
 }
 
 .tip-popover-list li{

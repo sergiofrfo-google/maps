@@ -351,10 +351,11 @@ function startPlacePopovers() {
     // Content: use per-place tips if present (data attribute), else fall back to description
     const content = pop.querySelector('.tip-popover-content');
     const descNode = [...li.childNodes].find(n => n.nodeType === 3 && /\S/.test(n.nodeValue));
-    const tipsAttr = li.getAttribute('data-place-tips') || '';
+    const tipsAttr = (li.getAttribute('data-place-tips') || '').replace(/\r/g,'');
     const tipsArr = tipsAttr
-      ? tipsAttr.split(/\r?\n|&#10;/).map(s => s.trim()).filter(Boolean)
+      ? tipsAttr.split('\n').map(s => s.trim()).filter(Boolean)
       : [];
+
     
     if (tipsArr.length) {
       const titleEl = document.createElement('p');

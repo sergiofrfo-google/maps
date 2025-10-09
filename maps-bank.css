@@ -563,7 +563,9 @@
 .place-title-wrap{
   display: inline-flex;
   align-items: baseline;
-  gap: 4px; /* tighten if you want even closer spacing */
+  gap: 2px;              /* tighter space */
+  white-space: nowrap;   /* keep name + icon together */
+  flex: 0 0 auto;        /* don't stretch or wrap inside */
 }
 #placesList .place-desc{ margin-left: 6px; }
 

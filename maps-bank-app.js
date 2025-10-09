@@ -506,7 +506,7 @@ async function updateMarkers(city) {
 
           <a class="pinlink" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" rel="noopener">📍</a>
           <a class="place-title" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" rel="noopener">${p.name}</a>
-          ${p.description ? ` <span class="place-desc">— ${p.description}</span>` : ``}
+          ${p.description ? ` <span class="place-desc">&mdash;&nbsp;${p.description}</span>` : ``}
         </li>
         `).join('')}
         </ul>

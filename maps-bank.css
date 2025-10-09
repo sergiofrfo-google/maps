@@ -543,17 +543,21 @@
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  z-index: 10;
+  z-index: 30;
   background: #fff;
   border: 1px solid rgba(0,0,0,.15);
   border-radius: 10px;
   box-shadow: 0 8px 20px rgba(0,0,0,.12);
   padding: 12px 14px;
-  min-width: 360px;      /* wider pop-up */
-  max-width: 520px;      /* allow it to grow if content is long */
+  min-width: 420px;      /* wider */
+  max-width: 560px;      /* allow longer tips */
+  display: none;         /* closed by default */
 }
 
-.place-tip-popover.open{ display: block; }
+.place-tip-popover.open{  /* match JS toggle */
+  display: block;
+}
+
 
 .tip-popover-inner{ position: relative; }
 .tip-popover-close{
@@ -585,4 +589,19 @@
   line-height: 1.45;
 }
 
+.tip-popover-title{
+  font-weight: 600;
+  margin: 0 0 6px 0;
+}
+
+.tip-popover-list{
+  list-style: disc;
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.tip-popover-list li{
+  margin: 6px 0;
+  line-height: 1.45;
+}
 

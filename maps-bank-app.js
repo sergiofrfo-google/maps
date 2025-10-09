@@ -348,14 +348,38 @@ function startPlacePopovers() {
         <div class="tip-popover-content"></div>
       </div>`;
 
-    // Content: use any per-place tips if present (data attribute), else fall back to the text after the link (description)
+    // Content: use per-place tips if present (data attribute), else fall back to description
     const content = pop.querySelector('.tip-popover-content');
     const descNode = [...li.childNodes].find(n => n.nodeType === 3 && /\S/.test(n.nodeValue));
-    const tipsText = li.getAttribute('data-place-tips') || (descNode ? descNode.nodeValue.trim().replace(/^—\s*/, '') : '');
-    content.textContent = tipsText || 'No specific tips for this place. See “Tips” above.';
-
+    const tipsAttr = li.getAttribute('data-place-tips') || '';
+    const tipsArr = tipsAttr
+      ? tipsAttr.split(/\r?\n|&#10;/).map(s => s.trim()).filter(Boolean)
+      : [];
+    
+    if (tipsArr.length) {
+      const titleEl = document.createElement('p');
+      titleEl.className = 'tip-popover-title';
+      titleEl.textContent = 'Tips';
+      const ul = document.createElement('ul');
+      ul.className = 'tip-popover-list';
+      tipsArr.forEach(t => {
+        const liEl = document.createElement('li');
+        liEl.textContent = t;
+        ul.appendChild(liEl);
+      });
+      content.innerHTML = '';
+      content.appendChild(titleEl);
+      content.appendChild(ul);
+    } else {
+      const fallback = descNode ? descNode.nodeValue.trim().replace(/^—\s*/, '') : '';
+      content.textContent = fallback || 'No specific tips for this place. See “Tips” above.';
+    }
     // Insert after the place link
-    nameLink.insertAdjacentElement('afterend', trigger);
+    const wrap = document.createElement('span');
+    wrap.className = 'place-title-wrap';
+    nameLink.parentNode.insertBefore(wrap, nameLink);
+    wrap.appendChild(nameLink);
+    wrap.appendChild(trigger);
     li.appendChild(pop);
 
     // Interactions (hover + click + close X + outside click)
@@ -476,8 +500,9 @@ async function updateMarkers(city) {
         <li data-place-tips="${(() => {
           const raw = getAnyCase(p, ['tips','advice','hints']);
           const arr = normalizeTips(raw);
-          return (arr.length ? arr.join(' • ') : '').replace(/"/g,'&quot;');
+          return (arr.length ? arr.join('\n') : '').replace(/"/g,'&quot;');
         })()}">
+
           <a class="pinlink" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" rel="noopener">📍</a>
           <a class="place-title" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" rel="noopener">${p.name}</a>
           ${p.description ? ` <span class="place-desc">— ${p.description}</span>` : ``}

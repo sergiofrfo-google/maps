@@ -539,7 +539,6 @@
   vertical-align: middle;
 }
 
-
 .place-tip-popover{
   position: absolute;
   z-index: 1000;
@@ -561,4 +560,10 @@
   border: 0; background: transparent; cursor: pointer; font-size: 18px;
 }
 .place-tip-trigger { font-size: 13px; margin: 0 4px; }
+.place-title-wrap{
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px; /* tighten if you want even closer spacing */
+}
+#placesList .place-desc{ margin-left: 6px; }
 

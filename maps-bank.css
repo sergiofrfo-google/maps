@@ -554,8 +554,7 @@
   display: none;         /* closed by default */
 }
 
-.place-tip-popover.open{  /* match JS toggle */
-  display: block;
+.place-tip-popover.open{ display: block; }
 }
 
 

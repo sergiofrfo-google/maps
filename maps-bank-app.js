@@ -122,9 +122,10 @@ const shareBtn = document.getElementById("sharePlacesBtn");
 if (shareBtn) {
   shareBtn.removeAttribute("disabled");
   shareBtn.addEventListener("click", async () => {
-    const text = buildShareText(false);     // only places
-    await copyToClipboard(text);
+    const payload = buildSharePayload(false);   // places only
+    await copyToClipboard(payload);
     flashCopied(shareBtn);
+  });
   });
 }
 
@@ -132,8 +133,8 @@ const shareTipsBtn = document.getElementById("sharePlacesTipsBtn");
 if (shareTipsBtn) {
   shareTipsBtn.removeAttribute("disabled");
   shareTipsBtn.addEventListener("click", async () => {
-    const text = buildShareText(true);      // places + tips
-    await copyToClipboard(text);
+    const payload = buildSharePayload(true);    // places + tips
+    await copyToClipboard(payload);
     flashCopied(shareTipsBtn);
   });
 }
@@ -836,22 +837,29 @@ async function exportBankPDF(){
 // Build share text from visible sections
 // includeTips = false -> only places; true -> places + tips
 // ------------------------------------------------
-function buildShareText(includeTips){
+function buildSharePayload(includeTips){
   const citySel = document.getElementById("citySelect");
   const countrySel = document.getElementById("countrySelect");
   const city = citySel?.value || "";
   const country = countrySel?.value || "";
 
-  let out = `${city}${country ? ", " + country : ""} — Places`;
-  if (includeTips) out += " & Tips";
-  out += "\n\n";
+  const title = `${city}${country ? ", " + country : ""} — Places${includeTips ? " & Tips" : ""}`;
 
-  // Visible category sections (non-tip)
+  // helpers (escape only for HTML branch)
+  const esc = s => (s || "").replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  let txt = `${title}\n\n`;
+  let html = `<div><p><strong>${esc(title)}</strong></p>`;
+
+  // visible category sections (non-tip)
   const catSections = Array.from(document.querySelectorAll(".mb-categories .category-section:not(.tip-card)"));
   catSections.forEach(sec => {
     const h = sec.querySelector(".category-title");
     const sectionTitle = (h?.textContent || "").trim();
-    if (sectionTitle) out += `${sectionTitle}\n`;
+    if (sectionTitle) {
+      txt += `${sectionTitle}\n`;
+      html += `<h3 style="margin:10px 0 6px">${esc(sectionTitle)}</h3><ul style="margin:0 0 12px 18px; padding:0">`;
+    }
     const items = sec.querySelectorAll(".category-list > li");
     items.forEach(li => {
       const a = li.querySelector(".place-title");
@@ -859,47 +867,65 @@ function buildShareText(includeTips){
       const href = a?.getAttribute("href") || "";
       let desc = li.querySelector(".place-desc")?.textContent || "";
       if (!name) return;
-      desc = desc.replace(/^\s*[—-]+\s*/, "").trim();      // avoid double dash
-      out += `- ${name}${href ? ` (${href})` : ""}${desc ? ` — ${desc}` : ""}\n`;
+      desc = desc.replace(/^\s*[—-]+\s*/, "").trim(); // avoid double dash
+      // plain text
+      txt += `- ${name}${href ? ` (${href})` : ""}${desc ? ` — ${desc}` : ""}\n`;
+      // html
+      html += `<li><strong>${href ? `<a href="${esc(href)}">${esc(name)}</a>` : esc(name)}</strong>${desc ? ` — ${esc(desc)}` : ""}</li>`;
     });
-    out += "\n";
+    if (sectionTitle) html += `</ul>`;
+    txt += `\n`;
   });
 
   if (includeTips){
-    // Only tips that are visible per the tips filter
     const tipSections = Array.from(document.querySelectorAll(".mb-categories .category-section.tip-card"))
       .filter(el => getComputedStyle(el).display !== "none");
     tipSections.forEach(sec => {
       const h = sec.querySelector(".category-title");
       const sectionTitle = (h?.textContent || "").trim();
-      if (sectionTitle) out += `${sectionTitle} — Tips\n`;
+      if (sectionTitle) {
+        txt += `${sectionTitle} — Tips\n`;
+        html += `<h3 style="margin:10px 0 6px">${esc(sectionTitle)} — Tips</h3><ul style="margin:0 0 12px 18px; padding:0">`;
+      }
       const lis = sec.querySelectorAll(".tips-list > li");
       lis.forEach(li => {
         const t = (li.textContent || "").trim();
-        if (t) out += `• ${t}\n`;
+        if (!t) return;
+        txt += `• ${t}\n`;
+        html += `<li>• ${esc(t)}</li>`;
       });
-      out += "\n";
+      if (sectionTitle) html += `</ul>`;
+      txt += `\n`;
     });
   }
 
-  return out.trim();
+  html += `</div>`;
+  return { text: txt.trim(), html };
 }
+
 
 // ------------------------------------------------
 // Clipboard helpers
 // ------------------------------------------------
-async function copyToClipboard(text){
+async function copyToClipboard(payload){
   try{
-    if (navigator.clipboard && window.isSecureContext){
-      await navigator.clipboard.writeText(text);
-    }else{
+    if (navigator.clipboard && window.ClipboardItem) {
+      const data = {
+        "text/plain": new Blob([payload.text], { type: "text/plain" })
+      };
+      if (payload.html) {
+        data["text/html"] = new Blob([payload.html], { type: "text/html" });
+      }
+      await navigator.clipboard.write([ new ClipboardItem(data) ]);
+    } else if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(payload.text);
+    } else {
       const ta = document.createElement("textarea");
-      ta.value = text;
+      ta.value = payload.text;
       ta.style.position = "fixed";
-      ta.style.top = "-1000px";
+      ta.style.top = "-9999px";
       document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
+      ta.focus(); ta.select();
       document.execCommand("copy");
       document.body.removeChild(ta);
     }
@@ -908,6 +934,7 @@ async function copyToClipboard(text){
     alert("Could not copy to clipboard. Please try again.");
   }
 }
+
 
 function flashCopied(btn){
   const old = btn.textContent;

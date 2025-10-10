@@ -625,3 +625,4 @@
   opacity: .5;
   cursor: not-allowed;
 }
+.pdf-btn + .pdf-btn { margin-left: 8px; }

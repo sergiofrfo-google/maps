@@ -97,6 +97,7 @@ async function loadMeta() {
       updateCities(meta);
       
       // Wire up the CTA button
+      // Wire up the CTA button
       const checkMapsBtn = document.getElementById("checkMapsBtn");
       if (checkMapsBtn) {
         checkMapsBtn.addEventListener("click", () => {
@@ -109,6 +110,13 @@ async function loadMeta() {
           });
         });
       }
+
+// PDF export button
+const exportBtn = document.getElementById("exportPdfBtn");
+if (exportBtn) {
+  exportBtn.addEventListener("click", exportBankPDF);
+}
+
 // Wire up the Tips filter bar (outside the map)
 const tipsFilterEl = document.getElementById('tips-filter');
 if (tipsFilterEl) {
@@ -116,6 +124,7 @@ if (tipsFilterEl) {
     if (e.target && e.target.matches('input[type="checkbox"]')) applyTipsFilter();
   });
 }
+
 // Apply once in case tips already exist later
 applyTipsFilter();
 startPlacePopovers();
@@ -138,7 +147,10 @@ function toggleButtonState() {
   const city = document.getElementById("citySelect")?.value;
   const btn = document.getElementById("checkMapsBtn");
   if (btn) btn.disabled = !(country && city);
+  const pdfBtn = document.getElementById("exportPdfBtn");
+  if (pdfBtn) pdfBtn.disabled = !(country && city);
 }
+
 
 /* ---------------- Categories Panel (Reused) ---------------- */
 
@@ -248,6 +260,51 @@ function getCategoryColor(cat) {
   };
   return map[(cat || "").toLowerCase()] || "#555";
 }
+
+// jsPDF loader (same as cityroute)
+async function loadJsPDF(){
+  if (window.jspdf?.jsPDF) return window.jspdf.jsPDF;
+  await new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js";
+    s.onload = res; s.onerror = () => rej(new Error("Failed to load jsPDF"));
+    document.head.appendChild(s);
+  });
+  return window.jspdf.jsPDF;
+}
+
+// Use the same key as cityroute (kept here to avoid cross-page dependency)
+const GMAPS_API_KEY = "AIzaSyA6MFWoq480bdhSIEIHiedPRat4Xq8ng20";
+
+// Build a Google Static Map URL from visible places
+function buildStaticMapUrlForBank(places, city){
+  const params = [];
+  params.push("size=1024x420");
+  params.push("scale=2");
+  params.push("maptype=roadmap");
+
+  const byCat = {};
+  places.forEach(p => {
+    const cat = p.category || "Other";
+    if (!byCat[cat]) byCat[cat] = [];
+    byCat[cat].push(p);
+  });
+
+  Object.keys(byCat).forEach(cat => {
+    const color = (getCategoryColor(cat) || "#d23").replace("#", "0x");
+    const pts = byCat[cat].map(p => `${p.lat},${p.lng}`).join("|");
+    params.push(`markers=color:${color}|${pts}`);
+  });
+
+  if (places.length === 0 && city){
+    params.push(`center=${encodeURIComponent(city)}`);
+    params.push("zoom=11");
+  }
+
+  const key = encodeURIComponent(GMAPS_API_KEY);
+  return `https://maps.googleapis.com/maps/api/staticmap?${params.join("&")}&key=${key}`;
+}
+
 
 let lastTipsKey = null;
 let lastTipsData = null;
@@ -579,8 +636,113 @@ function resetView() {
   if (!bounds.isEmpty()) map.fitBounds(bounds);
 }
 
+// ------------------------------------------------
+// Export PDF (respects selected Categories & Tips)
+// ------------------------------------------------
+async function exportBankPDF(){
+  try{
+    const jsPDF = await loadJsPDF();
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 40;
+    const maxW = pageW - margin*2;
+    const lineH = 16;
+    let y = margin;
+
+    // Current city/country
+    const citySel = document.getElementById("citySelect");
+    const countrySel = document.getElementById("countrySelect");
+    const city = citySel?.value || "";
+    const country = countrySel?.value || "";
+
+    // Title
+    doc.setFont("helvetica","bold"); doc.setFontSize(16);
+    const title = `${city}${country ? ", " + country : ""} — Map & Tips`;
+    doc.text(title, margin, y); y += 18;
+    doc.setDrawColor(220); doc.line(margin, y, pageW - margin, y); y += 12;
+
+    // Selected categories
+    const selectedCats = Array.from(document.querySelectorAll(".cat-filter:checked"))
+      .map(cb => decodeURIComponent(cb.dataset.cat));
+
+    // Fetch and filter places
+    let places = [];
+    if (selectedCats.length){
+      const all = await fetchPlaces(city);
+      places = all.filter(p => selectedCats.includes(p.category));
+    }
+
+    // Map first
+    const mapUrl = buildStaticMapUrlForBank(places, city);
+    const imgW = maxW, imgH = Math.round(maxW * 0.4);
+    try{
+      doc.addImage(mapUrl, "PNG", margin, y, imgW, imgH);
+      y += imgH + 14;
+    }catch(_){}
+
+    // Writer helper
+    function write(text, opt={bold:false}){
+      doc.setFont("helvetica", opt.bold ? "bold":"normal");
+      doc.setFontSize(opt.bold ? 13 : 11);
+      const lines = doc.splitTextToSize(text, maxW);
+      lines.forEach(line=>{
+        if (y > pageH - margin) { doc.addPage(); y = margin; }
+        doc.text(line, margin, y); y += lineH;
+      });
+    }
+
+    // Categories currently rendered (non-tip sections)
+    const catSections = Array.from(document.querySelectorAll(".mb-categories .category-section:not(.tip-card)"));
+    for (const sec of catSections){
+      const h = sec.querySelector(".category-title");
+      if (h){
+        if (y > pageH - margin - 24) { doc.addPage(); y = margin; }
+        doc.setFont("helvetica","bold"); doc.setFontSize(14);
+        doc.text(h.textContent.trim(), margin, y); y += 14;
+        doc.setDrawColor(230); doc.line(margin, y, pageW - margin, y); y += 10;
+      }
+      const items = sec.querySelectorAll(".category-list > li");
+      items.forEach(li=>{
+        const name = li.querySelector(".place-title")?.textContent?.trim() || "";
+        const desc = li.querySelector(".place-desc")?.textContent?.trim() || "";
+        if (!name) return;
+        write(`• ${name}${desc ? " — " + desc : ""}`);
+      });
+      y += 4;
+    }
+
+    // Tips sections visible per Tips filter
+    const tipSections = Array.from(document.querySelectorAll(".mb-categories .category-section.tip-card"))
+      .filter(el => getComputedStyle(el).display !== "none");
+    for (const sec of tipSections){
+      const h = sec.querySelector(".category-title");
+      if (h){
+        if (y > pageH - margin - 24) { doc.addPage(); y = margin; }
+        doc.setFont("helvetica","bold"); doc.setFontSize(14);
+        doc.text(h.textContent.trim(), margin, y); y += 14;
+        doc.setDrawColor(230); doc.line(margin, y, pageW - margin, y); y += 10;
+      }
+      const lis = sec.querySelectorAll(".tips-list > li");
+      lis.forEach(li=>{
+        const t = li.textContent.trim();
+        if (t) write(`• ${t}`);
+      });
+      y += 4;
+    }
+
+    // Save
+    const fname = `${city || "map"}_map_and_tips.pdf`;
+    doc.save(fname);
+  }catch(err){
+    console.error("PDF export failed:", err);
+    alert("Could not generate the PDF. Please try again.");
+  }
+}
+
 // Hook for WordPress loader (unchanged)
 window.initMapsBankUI = function(rootEl) {
   console.log("MapsBank UI initialized in:", rootEl);
 };
+
 

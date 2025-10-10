@@ -498,9 +498,12 @@
   text-decoration-thickness: 1px;
 }
 
-#placesList li .place-desc {
-  display: inline;                      /* ensure it doesn't break line */
-  margin-left: .05rem;                   /* tighten the gap */
+#placesList li .place-desc{
+  display: inline;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-left: 0;        /* small gap after 💡 */
+  overflow-wrap: anywhere; /* allow nice wrapping of long words */
 }
 
 #placesList section.is-hidden {         /* used below by the filter */
@@ -536,7 +539,7 @@
 
 /* Place tips trigger + popover */
 .place-tip-trigger{
-  margin: 0 2px;
+  margin: 0;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -590,6 +593,15 @@
   list-style-position: outside;
   margin: 0;
   padding-left: 1.25rem;     /* indent bullets */
+}
+
+/* Reset inner LI in popover so global flex rule doesn't kill bullets */
+#placesList .category-list .place-tip-popover .tip-popover-list > li,
+#placesList .mb-list .place-tip-popover .tip-popover-list > li{
+  display: list-item !important;
+  list-style: disc !important;
+  align-items: initial !important;
+  gap: 0 !important;
 }
 
 .tip-popover-list li{

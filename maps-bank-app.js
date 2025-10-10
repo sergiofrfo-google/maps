@@ -307,6 +307,12 @@ function buildStaticMapUrlForBank(places, city){
   return `https://maps.googleapis.com/maps/api/staticmap?${params.join("&")}&key=${key}`;
 }
 
+function hexToRgb(hex){
+  const m = (hex || "").replace("#","").match(/^([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+  if(!m) return {r:0,g:0,b:0};
+  return { r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16) };
+}
+
 
 let lastTipsKey = null;
 let lastTipsData = null;
@@ -677,11 +683,19 @@ async function exportBankPDF(){
 
     // Map first
     const mapUrl = buildStaticMapUrlForBank(places, city);
-    const imgW = maxW, imgH = Math.round(maxW * 0.4);
+    // Read size=W x H from the URL so we preserve its aspect
+    let sizeW = 1024, sizeH = 420;
+    const m = mapUrl.match(/(?:\?|&)size=(\d+)x(\d+)/i);
+    if (m) { sizeW = parseInt(m[1],10); sizeH = parseInt(m[2],10); }
+    const aspect = sizeH / sizeW;
+    const imgW = maxW;
+    const imgH = Math.round(maxW * aspect);
+    
     try{
       doc.addImage(mapUrl, "PNG", margin, y, imgW, imgH);
       y += imgH + 14;
     }catch(_){}
+
 
     // Writer helper
     function write(text, opt={bold:false}){
@@ -700,17 +714,63 @@ async function exportBankPDF(){
       const h = sec.querySelector(".category-title");
       if (h){
         if (y > pageH - margin - 24) { doc.addPage(); y = margin; }
-        doc.setFont("helvetica","bold"); doc.setFontSize(14);
-        doc.text(h.textContent.trim(), margin, y); y += 14;
+        const catName = h.textContent.trim();
+        const rgb = hexToRgb(getCategoryColor(catName));
+        doc.setFont("helvetica","bold"); 
+        doc.setFontSize(14);
+        doc.setTextColor(rgb.r, rgb.g, rgb.b);   // keep category color
+        doc.text(catName, margin, y);
+        doc.setTextColor(0,0,0);                 // back to black for body
+        y += 14;
         doc.setDrawColor(230); doc.line(margin, y, pageW - margin, y); y += 10;
       }
+
       const items = sec.querySelectorAll(".category-list > li");
       items.forEach(li=>{
-        const name = li.querySelector(".place-title")?.textContent?.trim() || "";
-        const desc = li.querySelector(".place-desc")?.textContent?.trim() || "";
+        const a = li.querySelector(".place-title");
+        const name = a?.textContent?.trim() || "";
+        const href = a?.getAttribute("href") || "";
+        let desc = li.querySelector(".place-desc")?.textContent || "";
         if (!name) return;
-        write(`• ${name}${desc ? " — " + desc : ""}`);
+      
+        // Remove any leading dash already present in the DOM text (avoid “— —”)
+        desc = desc.replace(/^\s*[—-]+\s*/, "").trim();
+      
+        // Layout: bullet + bold linked name on first line, then “ — ” + desc continues and wraps
+        if (y > pageH - margin) { doc.addPage(); y = margin; }
+      
+        const bullet = "• ";
+        let x = margin;
+      
+        // bullet
+        doc.setFont("helvetica", "normal"); doc.setFontSize(11);
+        doc.text(bullet, x, y); 
+        x += doc.getTextWidth(bullet);
+      
+        // bold clickable name
+        doc.setFont("helvetica", "bold");
+        if (href) doc.textWithLink(name, x, y, { url: href });
+        else doc.text(name, x, y);
+        x += doc.getTextWidth(name);
+      
+        // desc (normal), prefixed by a single em dash
+        doc.setFont("helvetica", "normal");
+        const rest = desc ? ` — ${desc}` : "";
+      
+        // First line: continue at current x; wrap overflow to next lines at left margin
+        const spaceFirst = Math.max(0, maxW - (x - margin));
+        const firstPart = doc.splitTextToSize(rest, spaceFirst);
+        if (firstPart.length){
+          doc.text(firstPart[0], x, y);
+          for (let i = 1; i < firstPart.length; i++){
+            y += lineH;
+            if (y > pageH - margin) { doc.addPage(); y = margin; }
+            doc.text(firstPart[i], margin, y);
+          }
+        }
+        y += lineH;
       });
+
       y += 4;
     }
 

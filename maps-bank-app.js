@@ -832,6 +832,94 @@ async function exportBankPDF(){
   }
 }
 
+// ------------------------------------------------
+// Build share text from visible sections
+// includeTips = false -> only places; true -> places + tips
+// ------------------------------------------------
+function buildShareText(includeTips){
+  const citySel = document.getElementById("citySelect");
+  const countrySel = document.getElementById("countrySelect");
+  const city = citySel?.value || "";
+  const country = countrySel?.value || "";
+
+  let out = `${city}${country ? ", " + country : ""} — Places`;
+  if (includeTips) out += " & Tips";
+  out += "\n\n";
+
+  // Visible category sections (non-tip)
+  const catSections = Array.from(document.querySelectorAll(".mb-categories .category-section:not(.tip-card)"));
+  catSections.forEach(sec => {
+    const h = sec.querySelector(".category-title");
+    const sectionTitle = (h?.textContent || "").trim();
+    if (sectionTitle) out += `${sectionTitle}\n`;
+    const items = sec.querySelectorAll(".category-list > li");
+    items.forEach(li => {
+      const a = li.querySelector(".place-title");
+      const name = a?.textContent?.trim() || "";
+      const href = a?.getAttribute("href") || "";
+      let desc = li.querySelector(".place-desc")?.textContent || "";
+      if (!name) return;
+      desc = desc.replace(/^\s*[—-]+\s*/, "").trim();      // avoid double dash
+      out += `- ${name}${href ? ` (${href})` : ""}${desc ? ` — ${desc}` : ""}\n`;
+    });
+    out += "\n";
+  });
+
+  if (includeTips){
+    // Only tips that are visible per the tips filter
+    const tipSections = Array.from(document.querySelectorAll(".mb-categories .category-section.tip-card"))
+      .filter(el => getComputedStyle(el).display !== "none");
+    tipSections.forEach(sec => {
+      const h = sec.querySelector(".category-title");
+      const sectionTitle = (h?.textContent || "").trim();
+      if (sectionTitle) out += `${sectionTitle} — Tips\n`;
+      const lis = sec.querySelectorAll(".tips-list > li");
+      lis.forEach(li => {
+        const t = (li.textContent || "").trim();
+        if (t) out += `• ${t}\n`;
+      });
+      out += "\n";
+    });
+  }
+
+  return out.trim();
+}
+
+// ------------------------------------------------
+// Clipboard helpers
+// ------------------------------------------------
+async function copyToClipboard(text){
+  try{
+    if (navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(text);
+    }else{
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.top = "-1000px";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+  }catch(err){
+    console.error("Clipboard copy failed:", err);
+    alert("Could not copy to clipboard. Please try again.");
+  }
+}
+
+function flashCopied(btn){
+  const old = btn.textContent;
+  btn.textContent = "Copied!";
+  btn.classList.add("copied");
+  setTimeout(() => {
+    btn.textContent = old;
+    btn.classList.remove("copied");
+  }, 1200);
+}
+
+
 // Hook for WordPress loader (unchanged)
 window.initMapsBankUI = function(rootEl) {
   console.log("MapsBank UI initialized in:", rootEl);

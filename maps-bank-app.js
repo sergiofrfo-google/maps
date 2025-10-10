@@ -117,7 +117,26 @@ if (exportBtn) {
   exportBtn.removeAttribute("disabled");     // ← enable the button in the DOM
   exportBtn.addEventListener("click", exportBankPDF);
 }
+// Share buttons
+const shareBtn = document.getElementById("sharePlacesBtn");
+if (shareBtn) {
+  shareBtn.removeAttribute("disabled");
+  shareBtn.addEventListener("click", async () => {
+    const text = buildShareText(false);     // only places
+    await copyToClipboard(text);
+    flashCopied(shareBtn);
+  });
+}
 
+const shareTipsBtn = document.getElementById("sharePlacesTipsBtn");
+if (shareTipsBtn) {
+  shareTipsBtn.removeAttribute("disabled");
+  shareTipsBtn.addEventListener("click", async () => {
+    const text = buildShareText(true);      // places + tips
+    await copyToClipboard(text);
+    flashCopied(shareTipsBtn);
+  });
+}
 
 // Wire up the Tips filter bar (outside the map)
 const tipsFilterEl = document.getElementById('tips-filter');

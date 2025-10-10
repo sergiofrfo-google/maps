@@ -683,18 +683,23 @@ async function exportBankPDF(){
 
     // Map first
     const mapUrl = buildStaticMapUrlForBank(places, city);
-    // Read size=W x H from the URL so we preserve its aspect
-    let sizeW = 1024, sizeH = 420;
-    const m = mapUrl.match(/(?:\?|&)size=(\d+)x(\d+)/i);
-    if (m) { sizeW = parseInt(m[1],10); sizeH = parseInt(m[2],10); }
-    const aspect = sizeH / sizeW;
-    const imgW = maxW;
-    const imgH = Math.round(maxW * aspect);
-    
     try{
-      doc.addImage(mapUrl, "PNG", margin, y, imgW, imgH);
+      // Load the image to get the true aspect ratio
+      const imgEl = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = mapUrl;
+      });
+      const aspect = imgEl.naturalHeight / imgEl.naturalWidth;
+      const imgW = maxW;
+      const imgH = Math.round(imgW * aspect);
+    
+      doc.addImage(imgEl, "PNG", margin, y, imgW, imgH);
       y += imgH + 14;
     }catch(_){}
+
 
 
     // Writer helper
@@ -733,43 +738,49 @@ async function exportBankPDF(){
         let desc = li.querySelector(".place-desc")?.textContent || "";
         if (!name) return;
       
-        // Remove any leading dash already present in the DOM text (avoid “— —”)
+        // Strip any leading dash so we never get “— —”
         desc = desc.replace(/^\s*[—-]+\s*/, "").trim();
       
-        // Layout: bullet + bold linked name on first line, then “ — ” + desc continues and wraps
+        // Bullet at left
         if (y > pageH - margin) { doc.addPage(); y = margin; }
-      
         const bullet = "• ";
         let x = margin;
-      
-        // bullet
         doc.setFont("helvetica", "normal"); doc.setFontSize(11);
-        doc.text(bullet, x, y); 
+        doc.text(bullet, x, y);
         x += doc.getTextWidth(bullet);
       
-        // bold clickable name
+        // Bold, blue, underlined link for the place name
         doc.setFont("helvetica", "bold");
-        if (href) doc.textWithLink(name, x, y, { url: href });
-        else doc.text(name, x, y);
+        if (href){
+          doc.setTextColor(26, 13, 171);               // link blue
+          doc.textWithLink(name, x, y, { url: href });
+          const nameW = doc.getTextWidth(name);
+          doc.setDrawColor(26, 13, 171);
+          doc.setLineWidth(0.75);
+          doc.line(x, y + 2, x + nameW, y + 2);        // underline
+          doc.setTextColor(0,0,0);
+          doc.setDrawColor(0);
+        } else {
+          doc.text(name, x, y);
+        }
         x += doc.getTextWidth(name);
       
-        // desc (normal), prefixed by a single em dash
+        // Description (single em-dash prefix), wraps to next line at left margin
         doc.setFont("helvetica", "normal");
         const rest = desc ? ` — ${desc}` : "";
-      
-        // First line: continue at current x; wrap overflow to next lines at left margin
-        const spaceFirst = Math.max(0, maxW - (x - margin));
-        const firstPart = doc.splitTextToSize(rest, spaceFirst);
-        if (firstPart.length){
-          doc.text(firstPart[0], x, y);
-          for (let i = 1; i < firstPart.length; i++){
+        const firstLineWidth = Math.max(0, maxW - (x - margin));
+        const first = doc.splitTextToSize(rest, firstLineWidth);
+        if (first.length){
+          doc.text(first[0], x, y);
+          for (let i = 1; i < first.length; i++){
             y += lineH;
             if (y > pageH - margin) { doc.addPage(); y = margin; }
-            doc.text(firstPart[i], margin, y);
+            doc.text(first[i], margin, y);
           }
         }
         y += lineH;
       });
+
 
       y += 4;
     }

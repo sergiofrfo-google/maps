@@ -611,3 +611,17 @@
   line-height: 1.45;
 }
 
+.pdf-btn{
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 2px solid #222;
+  background: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 10px auto 16px;
+}
+.pdf-btn[disabled]{
+  opacity: .5;
+  cursor: not-allowed;
+}

@@ -126,7 +126,6 @@ if (shareBtn) {
     await copyToClipboard(payload);
     flashCopied(shareBtn);
   });
-  });
 }
 
 const shareTipsBtn = document.getElementById("sharePlacesTipsBtn");

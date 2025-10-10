@@ -114,8 +114,10 @@ async function loadMeta() {
 // PDF export button
 const exportBtn = document.getElementById("exportPdfBtn");
 if (exportBtn) {
+  exportBtn.removeAttribute("disabled");     // ← enable the button in the DOM
   exportBtn.addEventListener("click", exportBankPDF);
 }
+
 
 // Wire up the Tips filter bar (outside the map)
 const tipsFilterEl = document.getElementById('tips-filter');

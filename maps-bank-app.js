@@ -11,6 +11,11 @@ const API_URL = "https://script.google.com/macros/s/AKfycbzDePUpGo2LC9VWbUx3YzDJ
 const TIPS_API_URL = "https://script.google.com/macros/s/AKfycbzRXtrf0rMn6KPcOQvtvavtjvbn7wHFKmNg5zDCeftyV1mwe2TlxocM9CkOZryK5M0U/exec";
 const CAN_HOVER = window.matchMedia && window.matchMedia("(hover: hover)").matches;
 
+async function fetchCountriesFast(){
+  const res = await fetch("https://apps.mapvivid.com/countries-database.json", { cache: "no-cache" });
+  return await res.json();
+}
+
 // version for localStorage city data (bump if data format changes)
 const CACHE_VERSION = "v1";
 
@@ -82,16 +87,19 @@ window.initMap = function() {
 /* ---------------- UI: Countries & Cities ---------------- */
 
 async function loadMeta() {
-  const meta = await fetchMeta();
+  const [meta, fastCountries] = await Promise.all([
+    fetchMeta(),
+    fetchCountriesFast().catch(() => null)
+  ]);
   if (!meta) return;
 
-      const countrySelect = document.getElementById("countrySelect");
-      const countries = meta.countries || [];
-      countrySelect.innerHTML = countries.map(c => `<option value="${c}">${c}</option>`).join("");
-      
-      // Keep city list in sync AND also eval button state
-      countrySelect.addEventListener("change", () => updateCities(meta));
-      countrySelect.addEventListener("change", toggleButtonState);
+  const countrySelect = document.getElementById("countrySelect");
+  const countries = (Array.isArray(fastCountries) && fastCountries.length) ? fastCountries : (meta.countries || []);
+  countrySelect.innerHTML = countries.map(c => `<option value="${c}">${c}</option>`).join("");
+
+  // Keep city list in sync AND also eval button state
+  countrySelect.addEventListener("change", () => updateCities(meta));
+  countrySelect.addEventListener("change", toggleButtonState);
       
       // Initial city fill
       updateCities(meta);

@@ -373,7 +373,6 @@
 
 
 /* Title as link (black, underline, hover) if you already switched name to <a class="place-title"> */
-#placesList .place-title{ font-weight: 600; text-decoration: underline; color: inherit; }
 #placesList .place-title:hover{ opacity:.8; text-decoration-thickness: 2px; }
 
 #placesList .place-desc{
@@ -391,12 +390,6 @@
 #placesList .category-list li,
 
 /* keep your linked titles as they are (works for both class names) */
-#placesList .place-title,
-#placesList .mb-title {
-  text-decoration: underline;
-  color: inherit;
-  font-weight: 600;
-}
 
 <!-- UI STYLES (inherits your site font) -->
 
@@ -445,13 +438,11 @@
 
 /* Make tips items look like our custom bullets with the emoji */
 .tips-list {
-  list-style: none;
   margin: 0;
   padding-left: 0;
 }
 .tips-list li {
   align-items: baseline;
-  gap: 8px;
   margin: 6px 0;
   line-height: 1.4;
 }

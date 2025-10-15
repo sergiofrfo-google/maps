@@ -130,7 +130,7 @@
 }
 
 .category-list {
-  list-style-type: none;
+  list-style-type: disc;
   padding-left: 0;
   margin: 0;
 }
@@ -375,7 +375,7 @@
 /* Title as link (black, underline, hover) if you already switched name to <a class="place-title"> */
 #placesList .place-title{ font-weight: 600; text-decoration: underline; color: inherit; }
 #placesList .place-title:hover{ opacity:.8; text-decoration-thickness: 2px; }
-#placesList .place-icon, #placesList .pinlink{ text-decoration: none; margin-right: 6px; }
+
 #placesList .place-desc{
   font-style: normal;
   flex: 1 1 auto;    /* use remaining space on the row */
@@ -387,11 +387,6 @@
 
 /* == Remove native bullets and use the emoji/link as the bullet == */
 #placesList .category-list,
-#placesList .mb-list {
-  list-style: none;          /* no native bullets */
-  padding-left: 0;           /* pull content left */
-  margin: 0;
-}
 
 #placesList .category-list li,
 #placesList .mb-list li {
@@ -401,19 +396,6 @@
   margin: 8px 0;
   line-height: 1.4;
   position: relative;   /* anchor .place-tip-popover */
-}
-
-
-/* the clickable emoji/pin becomes the "bullet" */
-#placesList .place-icon,
-#placesList .pinlink,
-#placesList .mb-emoji {
-  display: inline-block;
-  width: 1.1em;              /* bullet width so items align */
-  flex: 0 0 1.1em;
-  text-align: center;
-  text-decoration: none;
-  margin-right: 0;           /* gap handled by flex gap */
 }
 
 /* keep your linked titles as they are (works for both class names) */

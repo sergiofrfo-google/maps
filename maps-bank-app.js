@@ -380,12 +380,9 @@ function renderCityTips(data) {
     <section class="category-section tip-card" data-tip-type="${sec.title}">
       <h3 class="category-title">${sec.title}</h3>
       <ul class="category-list tips-list">
-        ${(sec.items || []).map(item => `
-          <li>
-            <span class="tip-emoji">💡</span>
-            <span>${item}</span>
-          </li>
-        `).join("")}
+      ${(sec.items || []).map(item => `
+      <li>${item}</li>
+      `).join("")}
       </ul>
     </section>
   `).join("");
@@ -594,13 +591,12 @@ async function updateMarkers(city) {
           const arr = normalizeTips(raw);
           return (arr.length ? arr.join('\n') : '').replace(/"/g,'&quot;');
         })()}">
-
-          <a class="pinlink" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" rel="noopener">📍</a>
           <a class="place-title" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.city || '') + ' ' + (p.country || ''))}" target="_blank" rel="noopener">${p.name}</a>
           ${p.description ? ` <span class="place-desc">&mdash;&nbsp;${p.description}</span>` : ``}
         </li>
         `).join('')}
         </ul>
+
         </section>
 
       `;

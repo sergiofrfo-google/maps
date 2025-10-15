@@ -338,7 +338,7 @@
 }
 
 .category-list li {
-  margin: 6px 0;
+  margin: 6px 15px;
   border-bottom: none;
 }
 
@@ -389,14 +389,6 @@
 #placesList .category-list,
 
 #placesList .category-list li,
-#placesList .mb-list li {
-  display: flex;
-  align-items: baseline;
-  gap: 1px;
-  margin: 8px 0;
-  line-height: 1.4;
-  position: relative;   /* anchor .place-tip-popover */
-}
 
 /* keep your linked titles as they are (works for both class names) */
 #placesList .place-title,
@@ -458,7 +450,6 @@
   padding-left: 0;
 }
 .tips-list li {
-  display: flex;
   align-items: baseline;
   gap: 8px;
   margin: 6px 0;

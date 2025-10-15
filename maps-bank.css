@@ -592,3 +592,17 @@
 .pdf-btn + .pdf-btn { margin-left: 8px; }
 
 .filter-title {font-weight: 800; font-size: 1.2em;}
+
+/* Check Maps button: same shape as .pdf-btn, green background */
+#checkMapsBtn.checkmaps-btn{
+  background: #00c853;
+  color: #fff;
+  border-color: #00c853;
+}
+
+/* subtle hover/active, keep look consistent */
+#checkMapsBtn.checkmaps-btn:hover{ filter: brightness(0.95); }
+#checkMapsBtn.checkmaps-btn:active{ transform: translateY(0.5px); }
+
+/* disabled state stays consistent with your .pdf-btn[disabled] */
+

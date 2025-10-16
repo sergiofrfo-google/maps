@@ -80,21 +80,38 @@ window.initMap = function() {
   loadMeta();
 };
 
+// --- Fast countries preload (for faster dropdown) ---
+let preloadedCountries = [];
+
+async function preloadCountriesFast() {
+  try {
+    const res = await fetch("https://apps.mapvivid.com/countries-database.json", { cache: "no-cache" });
+    preloadedCountries = await res.json();
+
+    // Immediately fill the dropdown if available
+    const select = document.getElementById("countrySelect");
+    if (select && preloadedCountries.length) {
+      select.innerHTML = preloadedCountries
+        .map(c => `<option value="${c}">${c}</option>`)
+        .join("");
+    }
+  } catch (err) {
+    console.warn("Country preload failed:", err);
+  }
+}
+
 /* ---------------- UI: Countries & Cities ---------------- */
 
 async function loadMeta() {
-    const metaPromise = fetchMeta();
-  const [meta, fastCountries] = await Promise.all([
-  fetchMeta(),
-  fetch("https://apps.mapvivid.com/countries-database.json", { cache: "no-cache" })
-    .then(r => r.json())
-    .catch(() => null)
-]);
-if (!meta) return;
+  const meta = await fetchMeta();
+  if (!meta) return;
 
-const countrySelect = document.getElementById("countrySelect");
-const countries = Array.isArray(fastCountries) && fastCountries.length ? fastCountries : (meta.countries || []);
-countrySelect.innerHTML = countries.map(c => `<option value="${c}">${c}</option>`).join("");
+  const countrySelect = document.getElementById("countrySelect");
+
+  // Prefer preloaded countries if available; otherwise fall back to meta.countries
+  const countries = Array.isArray(preloadedCountries) && preloadedCountries.length
+    ? preloadedCountries
+    : (meta.countries || []);
 
   // Keep city list in sync AND also eval button state
   countrySelect.addEventListener("change", () => updateCities(meta));

@@ -76,6 +76,7 @@ window.initMap = function() {
     zoom: 2
   });
   map.addListener("click", closeCurrentInfo);
+  preloadCountriesFast()
   addCustomControls();
   loadMeta();
 };

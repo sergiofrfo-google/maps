@@ -51,11 +51,7 @@
 
 /* existing styles */
 
-.info-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+
 
 .info-window .info-header h3 {
   margin: 0;
@@ -259,7 +255,10 @@
   display: flex;
   align-items: baseline;
   gap: 8px;
+  justify-content: space-between;
 }
+
+
 .info-header h3 {
   margin: 0;
   line-height: 1.2;

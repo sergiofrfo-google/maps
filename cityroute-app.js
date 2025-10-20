@@ -591,86 +591,125 @@ function downloadKML(itinerary, city, country) {
   // -------------------------------
   // 9. Export: Share (same)
   // -------------------------------
-  async function shareItinerary(itinerary, city, country, recommendations = {}){
-    const TIP_ORDER = ["transportation","security","saving","weather_clothing","cultural","local_hacks"];
-    const TIP_LABELS = {
-      transportation: "Transportation",
-      security: "Security",
-      saving: "Saving",
-      weather_clothing: "Weather/Clothing",
-      cultural: "Cultural",
-      local_hacks: "Local hacks"
-    };
+async function shareItinerary(itinerary, city, country, recommendations = {}) {
+  const TIP_ORDER = ["transportation","security","saving","weather_clothing","cultural","local_hacks"];
+  const TIP_LABELS = {
+    transportation: "Transportation",
+    security: "Security",
+    saving: "Saving",
+    weather_clothing: "Weather/Clothing",
+    cultural: "Cultural",
+    local_hacks: "Local hacks",
+  };
 
-    const selectedFocus = Array.from(document.querySelectorAll('input[name="tip_focus"]:checked')).map(i=>i.value);
-    const ALLOWED = new Set(selectedFocus);
+  const selectedFocus = Array.from(document.querySelectorAll('input[name="tip_focus"]:checked')).map(i=>i.value);
+  const ALLOWED = new Set(selectedFocus);
+  const allowFilter = (obj) => {
+    if (!obj || ALLOWED.size===0) return {};
+    const o={}; Object.keys(obj).forEach(k=>{ if (ALLOWED.has(k)) o[k]=obj[k]; });
+    return o;
+  };
 
-    const allowFilter = (obj) => {
-      if (!obj || ALLOWED.size===0) return {};
-      const out = {};
-      TIP_ORDER.forEach(k=>{
-        if (!ALLOWED.has(k)) return;
-        const arr = Array.isArray(obj[k]) ? obj[k].filter(Boolean) : [];
-        if (arr.length) out[k] = arr;
-      });
-      return out;
-    };
-    const hasAnyAllowed = (obj) => !!obj && Object.keys(obj).some(k => Array.isArray(obj[k]) && obj[k].length);
+  // Escape for HTML clipboard
+  const esc = (s) => String(s||"").replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const title = `${city}${country ? ", " + country : ""} — Itinerary`;
 
-    const days = [...new Set(itinerary.map(i => i.day))].sort((a,b)=>a-b);
-    let text = `${city}${country ? ", " + country : ""} — Personalized Itinerary\n\n`;
+  // ------- TEXT (keeps your content + link lines) -------
+  let text = `${title}\n\n`;
+  const days = [...new Set(itinerary.map(i=>i.day))].sort((a,b)=>a-b);
+  const byDay = new Map(); itinerary.forEach(it => { if(!byDay.has(it.day)) byDay.set(it.day, []); byDay.get(it.day).push(it); });
 
-    days.forEach(day=>{
-      text += `Day ${day}\n`;
-      const stops = itinerary.filter(s=>s.day===day);
-      stops.forEach(s=>{
-        const link=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((s.name||"") + ", " + city + (country ? ", " + country : ""))}`;
-        text += `• ${s.time ? s.time+" — " : ""}${s.name}\n  ${link}\n${s.description? "  ("+s.description+")\n":""}`;
-      });
-      if (stops.length>1){
-        const origin=encodeURIComponent(stops[0].name+", "+city+(country? ", "+country:""));
-        const destination=encodeURIComponent(stops[stops.length-1].name+", "+city+(country? ", "+country:""));
-        const waypoints=stops.slice(1,-1).map(s=>encodeURIComponent(s.name+", "+city+(country? ", "+country:""))).join("|");
-        const dUrl=`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypoints? "&waypoints="+waypoints:""}`;
-        text += `Directions (Day ${day}): ${dUrl}\n`;
-      }
-
-      const dailyTip = recommendations?.per_day?.[`day_${day}`];
-      if (dailyTip && String(dailyTip).trim()) {
-        text += `Tip for Day ${day}: ${dailyTip}\n`;
-      }
-
-      text += `\n`;
+  days.forEach(day => {
+    const stops = (byDay.get(day)||[]).sort((a,b)=> (a.time||"").localeCompare(b.time||""));
+    text += `Day ${day}\n`;
+    stops.forEach(s => {
+      const link = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(((s.name||"") + ", " + city + (country ? ", " + country : "")))}`;
+      text += `• ${s.time ? s.time+" — " : ""}${s.name}\n  ${link}\n${s.description? "  ("+s.description+")\n":""}`;
     });
+    if (stops.length>1){
+      const origin=encodeURIComponent(stops[0].name+", "+city+(country? ", "+country:""));
+      const destination=encodeURIComponent(stops[stops.length-1].name+", "+city+(country? ", "+country:""));
+      const waypoints=stops.slice(1,-1).map(s=>encodeURIComponent(s.name+", "+city+(country? ", "+country:""))).join("|");
+      const dUrl=`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypoints? "&waypoints="+waypoints:""}`;
+      text += `Directions (Day ${day}): ${dUrl}\n`;
+    }
+    const dailyTip = recommendations?.per_day?.[`day_${day}`];
+    if (dailyTip && String(dailyTip).trim()) text += `Tip for Day ${day}: ${dailyTip}\n`;
+    text += `\n`;
+  });
 
-    const cityTips = allowFilter(recommendations?.city_tips || {});
-    if (hasAnyAllowed(cityTips)) {
-      text += `CITY TIPS\n`;
-      Object.keys(cityTips).forEach(k=>{
-        text += `- ${TIP_LABELS[k]}:\n`;
-        cityTips[k].forEach(t => { text += `  • ${t}\n`; });
-      });
-      text += `\n`;
-    }
-
-    if (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent)){
-      try { 
-        await navigator.share({ title:`${city}${country ? ", " + country : ""} — Itinerary`, text }); 
-        return; 
-      } catch {}
-    }
-
-    try { 
-      await navigator.clipboard.writeText(text); 
-      alert("Itinerary copied ✔️"); 
-    }
-    catch {
-      const w = window.open("","_blank"); 
-      w.document.write(`<pre>${text.replace(/</g,"&lt;")}</pre>`); 
-      w.document.close();
-    }
+  const cityTips = allowFilter(recommendations?.general || {});
+  if (Object.keys(cityTips).length){
+    text += `CITY TIPS\n`;
+    Object.keys(cityTips).forEach(k=>{
+      text += `- ${TIP_LABELS[k]}:\n`;
+      cityTips[k].forEach(t => { text += `  • ${t}\n`; });
+    });
+    text += `\n`;
   }
-  window.shareItinerary = shareItinerary;
+
+  // ------- HTML (for rich clipboard: hyperlinked places) -------
+  let html = `<div><p><strong>${esc(title)}</strong></p>`;
+  days.forEach(day => {
+    const stops = (byDay.get(day)||[]).sort((a,b)=> (a.time||"").localeCompare(b.time||""));
+    html += `<p><strong>Day ${day}</strong></p><ul>`;
+    stops.forEach(s => {
+      const link = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(((s.name||"") + ", " + city + (country ? ", " + country : "")))}`;
+      html += `<li>${s.time ? esc(s.time)+" — " : ""}<a href="${link}">${esc(s.name)}</a>${s.description? " <em>("+esc(s.description)+")</em>":""}</li>`;
+    });
+    if (stops.length>1){
+      const origin=encodeURIComponent(stops[0].name+", "+city+(country? ", "+country:""));
+      const destination=encodeURIComponent(stops[stops.length-1].name+", "+city+(country? ", "+country:""));
+      const waypoints=stops.slice(1,-1).map(s=>encodeURIComponent(s.name+", "+city+(country? ", "+country:""))).join("|");
+      const dUrl=`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypoints? "&waypoints="+waypoints:""}`;
+      html += `<li><em>Directions (Day ${day}):</em> <a href="${dUrl}">${dUrl}</a></li>`;
+    }
+    const dailyTip = recommendations?.per_day?.[`day_${day}`];
+    if (dailyTip && String(dailyTip).trim()) html += `<li><strong>Tip for Day ${day}:</strong> ${esc(dailyTip)}</li>`;
+    html += `</ul>`;
+  });
+
+  if (Object.keys(cityTips).length){
+    html += `<p><strong>CITY TIPS</strong></p>`;
+    TIP_ORDER.forEach(k=>{
+      if (!cityTips[k] || !cityTips[k].length) return;
+      html += `<p><strong>${esc(TIP_LABELS[k])}:</strong></p><ul>`;
+      cityTips[k].forEach(t => { html += `<li>• ${esc(t)}</li>`; });
+      html += `</ul>`;
+    });
+  }
+  html += `</div>`;
+
+  // Mobile: native share sheet first
+  if (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent)){
+    try {
+      await navigator.share({ title, text });
+      return;
+    } catch (e) { /* fallback below */ }
+  }
+
+  // Desktop / fallback: rich clipboard (HTML + plain)
+  try {
+    if (navigator.clipboard && window.ClipboardItem) {
+      const data = { "text/plain": new Blob([text], { type: "text/plain" }) };
+      if (html) data["text/html"] = new Blob([html], { type: "text/html" });
+      await navigator.clipboard.write([ new ClipboardItem(data) ]);
+      alert("Itinerary copied ✔️");
+      return;
+    }
+  } catch (e) { /* continue to simple fallback */ }
+
+  try {
+    await navigator.clipboard?.writeText(text);
+    alert("Itinerary copied ✔️");
+  } catch {
+    const w = window.open("","_blank");
+    w.document.write(`<pre>${text.replace(/</g,"&lt;")}</pre>`);
+    w.document.close();
+  }
+}
+window.shareItinerary = shareItinerary;
+
 
   // -------------------------------
   // 2. Form submission (wired in init)

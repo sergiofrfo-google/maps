@@ -148,6 +148,14 @@ if (shareBtn) {
   shareBtn.removeAttribute("disabled");
   shareBtn.addEventListener("click", async () => {
     const payload = buildSharePayload(false);   // places only
+    const title = (payload.text.split("\n")[0] || "Places");
+    // Mobile: native share sheet; Desktop: rich clipboard (HTML + plain)
+    if (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent)) {
+      try {
+        await navigator.share({ title, text: payload.text });
+        return;
+      } catch (e) { /* fallback to clipboard */ }
+    }
     await copyToClipboard(payload);
     flashCopied(shareBtn);
   });
@@ -158,6 +166,13 @@ if (shareTipsBtn) {
   shareTipsBtn.removeAttribute("disabled");
   shareTipsBtn.addEventListener("click", async () => {
     const payload = buildSharePayload(true);    // places + tips
+    const title = (payload.text.split("\n")[0] || "Places & Tips");
+    if (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent)) {
+      try {
+        await navigator.share({ title, text: payload.text });
+        return;
+      } catch (e) { /* fallback to clipboard */ }
+    }
     await copyToClipboard(payload);
     flashCopied(shareTipsBtn);
   });

@@ -662,7 +662,7 @@ async function shareItinerary(itinerary, city, country, recommendations = {}) {
       const destination=encodeURIComponent(stops[stops.length-1].name+", "+city+(country? ", "+country:""));
       const waypoints=stops.slice(1,-1).map(s=>encodeURIComponent(s.name+", "+city+(country? ", "+country:""))).join("|");
       const dUrl=`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypoints? "&waypoints="+waypoints:""}`;
-      html += `<li><em>Directions (Day ${day}):</em> <a href="${dUrl}">${dUrl}</a></li>`;
+      html += `<li><a href="${dUrl}"><em>Directions (Day ${day})</em></a></li>`;
     }
     const dailyTip = recommendations?.per_day?.[`day_${day}`];
     if (dailyTip && String(dailyTip).trim()) html += `<li><strong>Tip for Day ${day}:</strong> ${esc(dailyTip)}</li>`;

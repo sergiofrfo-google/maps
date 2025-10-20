@@ -943,14 +943,12 @@ async function exportBankKML(){
         const query = encodeURIComponent(`${p.name || ""}, ${city}${country ? ", " + country : ""}`);
         const gmaps = `https://www.google.com/maps/search/?api=1&query=${query}`;
         const descHtml = `
-          <div>
-            <p><strong>${xmlEscape(p.name || "")}</strong></p>
-            <p><a href="${gmaps}">Open in Google Maps</a></p>
-            ${p.description ? `<p>${xmlEscape(p.description)}</p>` : ``}
-            ${p.category ? `<p><em>${xmlEscape(p.category)}</em></p>` : ``}
-          </div>
-        `.trim();
-
+            <div>
+              ${p.description ? `<p>${xmlEscape(p.description)}</p>` : ``}
+              <p><a href="${gmaps}">Open in Google Maps</a></p>
+              ${p.category ? `<p><em>${xmlEscape(p.category)}</em></p>` : ``}
+            </div>
+          `.trim();
         parts.push(`<Placemark>`);
         parts.push(`<name>${xmlEscape(p.name || "")}</name>`);
         parts.push(`<description>${wrapCDATA(descHtml)}</description>`);

@@ -142,6 +142,14 @@ if (exportBtn) {
   exportBtn.removeAttribute("disabled");     // ← enable the button in the DOM
   exportBtn.addEventListener("click", exportBankPDF);
 }
+
+// KML export button
+const kmlBtn = document.getElementById("exportKmlBtn");
+if (kmlBtn) {
+  kmlBtn.removeAttribute("disabled");
+  kmlBtn.addEventListener("click", exportBankKML);
+}
+
 // Share buttons
 const shareBtn = document.getElementById("sharePlacesBtn");
 if (shareBtn) {
@@ -210,6 +218,9 @@ function toggleButtonState() {
   if (btn) btn.disabled = !(country && city);
   const pdfBtn = document.getElementById("exportPdfBtn");
   if (pdfBtn) pdfBtn.disabled = !(country && city);
+  const kmlBtn = document.getElementById("exportKmlBtn");
+  if (kmlBtn) kmlBtn.disabled = !(country && city);
+
 }
 
 
@@ -867,6 +878,109 @@ async function exportBankPDF(){
     alert("Could not generate the PDF. Please try again.");
   }
 }
+
+// ------------------------------------------------
+// Export KML (grouped by Categories; for Google My Maps)
+// ------------------------------------------------
+async function exportBankKML(){
+  try{
+    // Current selections
+    const countrySel = document.getElementById("countrySelect");
+    const citySel = document.getElementById("citySelect");
+    const city = citySel?.value || "";
+    const country = countrySel?.value || "";
+
+    // Which categories are currently selected in the UI
+    const selectedCats = Array.from(document.querySelectorAll(".cat-filter:checked"))
+      .map(cb => decodeURIComponent(cb.dataset.cat));
+
+    if (!city || selectedCats.length === 0){
+      alert("Choose a city and at least one category.");
+      return;
+    }
+
+    // Fetch and filter places just like updateMarkers()
+    const placesAll = await fetchPlaces(city);
+    const places = placesAll.filter(p => selectedCats.includes(p.category));
+
+    // Group by category
+    const grouped = {};
+    places.forEach(p => {
+      const cat = p.category || "Other";
+      (grouped[cat] ||= []).push(p);
+    });
+
+    // Helpers (same style as cityroute)
+    const xmlEscape = (s = "") =>
+      String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&apos;");
+
+    const wrapCDATA = (s = "") => "<![CDATA[" + String(s).replace(/]]>/g, "]]]]><![CDATA[>") + "]]>";
+
+    // Build KML
+    const docName = `${city}${country ? ", " + country : ""} — Categories`;
+    const parts = [];
+    parts.push(`<?xml version="1.0" encoding="UTF-8"?>`);
+    parts.push(`<kml xmlns="http://www.opengis.net/kml/2.2">`);
+    parts.push(`<Document>`);
+    parts.push(`<name>${xmlEscape(docName)}</name>`);
+
+    // One Folder per Category (like CityRoute does per Day)
+    Object.keys(grouped).sort((a,b)=>a.localeCompare(b)).forEach(cat => {
+      parts.push(`<Folder>`);
+      parts.push(`<name>${xmlEscape(cat)}</name>`);
+
+      grouped[cat].forEach(p => {
+        const lat = (p.lat != null) ? String(p.lat) : "";
+        const lng = (p.lng != null) ? String(p.lng) : "";
+        if (!lat || !lng) return;
+
+        // Description: keep your same info (name link to GMaps + description)
+        const query = encodeURIComponent(`${p.name || ""}, ${city}${country ? ", " + country : ""}`);
+        const gmaps = `https://www.google.com/maps/search/?api=1&query=${query}`;
+        const descHtml = `
+          <div>
+            <p><strong>${xmlEscape(p.name || "")}</strong></p>
+            <p><a href="${gmaps}">Open in Google Maps</a></p>
+            ${p.description ? `<p>${xmlEscape(p.description)}</p>` : ``}
+            ${p.category ? `<p><em>${xmlEscape(p.category)}</em></p>` : ``}
+          </div>
+        `.trim();
+
+        parts.push(`<Placemark>`);
+        parts.push(`<name>${xmlEscape(p.name || "")}</name>`);
+        parts.push(`<description>${wrapCDATA(descHtml)}</description>`);
+        parts.push(`<Point><coordinates>${lng},${lat},0</coordinates></Point>`);
+        parts.push(`</Placemark>`);
+      });
+
+      parts.push(`</Folder>`);
+    });
+
+    parts.push(`</Document></kml>`);
+    const kml = parts.join("");
+
+    // Download
+    const blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml;charset=UTF-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = ((city || "map") + (country ? "_" + country : "")).replace(/\s+/g, "_") + "_categories.kml";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }catch(err){
+    console.error("KML export failed:", err);
+    alert("Could not generate the KML. Please try again.");
+  }
+}
+
+// Expose (optional)
+window.exportBankKML = exportBankKML;
+
 
 // ------------------------------------------------
 // Build share text from visible sections

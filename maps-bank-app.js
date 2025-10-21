@@ -403,7 +403,7 @@ async function loadCityTips(city, country) {
     const res = await fetch(url);
     const data = await res.json();
     // --- Enable "Save places" button if Google Maps link exists ---
-    const saveBtn = document.getElementById("savePlacesBtn");
+    const saveBtn = document.getElementById("googleMyMaps");
     if (saveBtn) {
       const link = data && data.mapsLink ? String(data.mapsLink).trim() : "";
       if (link) {

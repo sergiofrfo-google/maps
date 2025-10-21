@@ -402,6 +402,18 @@ async function loadCityTips(city, country) {
     const url = `${TIPS_API_URL}?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country || "")}`;
     const res = await fetch(url);
     const data = await res.json();
+    // --- Enable "Save places" button if Google Maps link exists ---
+    const saveBtn = document.getElementById("savePlacesBtn");
+    if (saveBtn) {
+      const link = data && data.mapsLink ? String(data.mapsLink).trim() : "";
+      if (link) {
+        saveBtn.style.display = "inline-block";
+        saveBtn.onclick = () => window.open(link, "_blank");
+      } else {
+        saveBtn.style.display = "none";
+        saveBtn.onclick = null;
+      }
+    }
     renderCityTips(data);
   } catch (err) {
     const tb = document.getElementById("cityTips");

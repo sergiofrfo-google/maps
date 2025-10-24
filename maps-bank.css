@@ -623,16 +623,23 @@
 .actions-line{
   display: flex;
   align-items: center;
-  justify-content: flex-start;  /* button stays left */
+  justify-content: flex-start;   /* ⬅ left */
   gap: 12px;
-  margin: 8px 0 0;              /* same spacing as before */
+  margin: 8px 0 0;               /* no extra bottom margin */
+}
+
+/* Ensure the button does NOT center itself via margins */
+.actions-line .pdf-btn{
+  display: inline-flex;
+  align-items: center;
+  margin: 0;                     /* ⬅ removes auto-centering */
 }
 
 .city-help-row{
+  margin-left: auto;             /* ⬅ pushes link to the right */
   position: relative;
   display: inline-flex;
   align-items: center;
-  margin-left: auto;            /* link block moves to the far right */
 }
 
 
@@ -674,4 +681,17 @@
 @media (max-width: 560px){
   .actions-line{ gap: 8px; }
   .city-help-popover{ width: 92vw; }
+}
+
+/* Restore your button’s green even if the theme tries to override it */
+#mapsbank-root .pdf-btn{
+  background-color: #00c853 !important;
+  border: 1px solid #00c853 !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+/* Optional: hover feel without changing your style */
+#mapsbank-root .pdf-btn:hover{
+  filter: brightness(0.95);
 }

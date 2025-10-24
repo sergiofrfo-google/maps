@@ -94,6 +94,32 @@ window.initMap = function() {
   loadMeta();
 };
 
+(function initCityHelpPopover(){
+  const link = document.getElementById('cityHelpLink');
+  const pop = document.getElementById('cityHelpPopover');
+  const closeBtn = pop ? pop.querySelector('.city-help-close') : null;
+  if (!link || !pop) return;
+
+  const open = (e) => {
+    e.preventDefault();
+    pop.classList.add('is-open');
+    pop.setAttribute('aria-hidden', 'false');
+  };
+  const close = () => {
+    pop.classList.remove('is-open');
+    pop.setAttribute('aria-hidden', 'true');
+  };
+  link.addEventListener('click', open);
+  if (closeBtn) closeBtn.addEventListener('click', close);
+  document.addEventListener('click', (e) => {
+    if (!pop.classList.contains('is-open')) return;
+    const inside = pop.contains(e.target) || e.target === link;
+    if (!inside) close();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') close();
+  });
+})();
 
 // --- Fast countries preload (for faster dropdown) ---
 let preloadedCountries = [];

@@ -78,8 +78,22 @@ window.initMap = function() {
   map.addListener("click", closeCurrentInfo);
   preloadCountriesFast()
   addCustomControls();
+
+  // If user tries to open City before meta/cities are ready, show the hint
+  const citySel = document.getElementById("citySelect");
+  if (citySel) {
+    const maybeShow = () => {
+      const hasOptions = citySel.options && citySel.options.length > 0;
+      if (metaLoading || !hasOptions) setCityLoading(true);
+    };
+    ["mousedown","focus","click","touchstart"].forEach(ev => {
+      citySel.addEventListener(ev, maybeShow);
+    });
+  }
+
   loadMeta();
 };
+
 
 // --- Fast countries preload (for faster dropdown) ---
 let preloadedCountries = [];
@@ -104,7 +118,9 @@ async function preloadCountriesFast() {
 /* ---------------- UI: Countries & Cities ---------------- */
 
 async function loadMeta() {
+  metaLoading = true;
   const meta = await fetchMeta();
+  metaLoading = false;
   if (!meta) return;
 
   const countrySelect = document.getElementById("countrySelect");

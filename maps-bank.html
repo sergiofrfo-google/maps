@@ -6,22 +6,25 @@
     <select id="citySelect"></select>
   </label>
 <div id="cityLoadingMsg" class="city-hint">Loading cities, please wait…</div>
-  <!-- New: CTA button (disabled until both dropdowns are set) -->
-<div class="city-help-row">
-  <a href="#" id="cityHelpLink" class="city-help-link">Don’t see your city?</a>
-  <div id="cityHelpPopover" class="city-help-popover" role="dialog" aria-hidden="true" aria-labelledby="cityHelpTitle">
-    <button type="button" class="city-help-close" aria-label="Close">×</button>
-    <p>We’re rolling out cities gradually in this first release. If you’d like yours added, email <a href="mailto:mapvivid@gmail.com">mapvivid@gmail.com</a> or contact <strong>Sergio Franco</strong> (owner).— I’ll add it for you.</p>
-  </div>
-</div>
-  
-  <button id="checkMapsBtn" class="pdf-btn checkmaps-btn" disabled>Check Maps</button>
+
   
   <!-- New: loading message -->
   <div id="loadingMessage" style="display:none; margin:8px 0; font-weight:600;">
     Loading maps, please wait…
   </div>
-  
+  <div class="actions-line">
+  <button id="checkMapsBtn" class="pdf-btn">Check Maps</button>
+
+  <div class="city-help-row">
+    <a href="#" id="cityHelpLink" class="city-help-link">Don’t see your city?</a>
+    <div id="cityHelpPopover" class="city-help-popover" role="dialog" aria-hidden="true">
+      <button type="button" class="city-help-close" aria-label="Close">×</button>
+      <p>We’re rolling out cities gradually in this first release. If you’d like yours added, email
+        <a href="mailto:mapvivid@gmail.com">mapvivid@gmail.com</a> or contact <strong>Sergio Franco</strong> — I’ll add it for you.</p>
+    </div>
+  </div>
+</div>
+
   <div id="categories"></div>
 
 </div>

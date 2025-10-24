@@ -616,7 +616,7 @@
 
 /* Extra spacing under the City select itself */
 #citySelect{
-  margin-bottom: 28px;         /* new: creates a gap for the dropdown overlay */
+  margin-bottom: 10px;         /* new: creates a gap for the dropdown overlay */
 }
 
 /* On small screens the dropdown overlay is taller — give a bit more room */

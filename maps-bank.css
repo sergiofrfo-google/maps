@@ -622,8 +622,25 @@
 /* --- City help link + popover --- */
 .city-help-row{
   position: relative;
-  margin: 8px 0 12px;   /* sits above the "Check Maps" button */
+  margin: 8px 0 12px;
+  text-align: right;         /* right-align the link */
 }
+
+.city-help-popover{
+  position: absolute;
+  right: 0;                  /* anchor to the right */
+  left: auto;                /* was left:0 */
+  top: 22px;
+  width: min(520px, 92vw);
+  background: #fff;
+  border: 1px solid #e3e3e3;
+  box-shadow: 0 8px 22px rgba(0,0,0,.12);
+  border-radius: 10px;
+  padding: 12px 14px 12px 14px;
+  z-index: 2000;             /* a bit higher to sit above the form */
+  display: none;
+}
+
 
 .city-help-link{
   display: inline-block;
@@ -631,20 +648,6 @@
   color: #0b74ff;
   text-decoration: underline;
   cursor: pointer;
-}
-
-.city-help-popover{
-  position: absolute;
-  left: 0;              /* left side, as requested */
-  top: 22px;            /* just below the link */
-  width: min(520px, 92vw);
-  background: #fff;
-  border: 1px solid #e3e3e3;
-  box-shadow: 0 8px 22px rgba(0,0,0,.12);
-  border-radius: 10px;
-  padding: 12px 14px 12px 14px;
-  z-index: 999;
-  display: none;        /* hidden by default */
 }
 
 .city-help-popover h4{

@@ -683,15 +683,4 @@
   .city-help-popover{ width: 92vw; }
 }
 
-/* Restore your button’s green even if the theme tries to override it */
-#mapsbank-root .pdf-btn{
-  background-color: #00c853 !important;
-  border: 1px solid #00c853 !important;
-  color: #fff !important;
-  box-shadow: none !important;
-}
 
-/* Optional: hover feel without changing your style */
-#mapsbank-root .pdf-btn:hover{
-  filter: brightness(0.95);
-}

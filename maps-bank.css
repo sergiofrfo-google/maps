@@ -619,4 +619,73 @@
   margin-bottom: 5px;         /* new: creates a gap for the dropdown overlay */
 }
 
+/* --- City help link + popover --- */
+.city-help-row{
+  position: relative;
+  margin: 8px 0 12px;   /* sits above the "Check Maps" button */
+}
+
+.city-help-link{
+  display: inline-block;
+  font-size: 13px;
+  color: #0b74ff;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.city-help-popover{
+  position: absolute;
+  left: 0;              /* left side, as requested */
+  top: 22px;            /* just below the link */
+  width: min(520px, 92vw);
+  background: #fff;
+  border: 1px solid #e3e3e3;
+  box-shadow: 0 8px 22px rgba(0,0,0,.12);
+  border-radius: 10px;
+  padding: 12px 14px 12px 14px;
+  z-index: 999;
+  display: none;        /* hidden by default */
+}
+
+.city-help-popover h4{
+  margin: 0 24px 6px 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.city-help-popover p{
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.city-help-popover a{
+  color: #0b74ff;
+  text-decoration: underline;
+}
+
+.city-help-close{
+  position: absolute;
+  right: 8px;
+  top: 6px;
+  width: 24px;
+  height: 24px;
+  line-height: 22px;
+  text-align: center;
+  border: 0;
+  background: transparent;
+  font-size: 18px;
+  cursor: pointer;
+  color: #666;
+}
+
+.city-help-popover.is-open{ display: block; }
+
+@media (max-width: 560px){
+  .city-help-popover{
+    top: 28px;
+    padding: 12px;
+  }
+}
+
 

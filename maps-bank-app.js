@@ -200,17 +200,32 @@ startPlacePopovers();
 
 }
 
+function setCityLoading(on, message) {
+  const el = document.getElementById("cityLoadingMsg");
+  if (!el) return;
+  el.textContent = message || "Loading cities, please wait…";
+  el.style.display = on ? "block" : "none";
+}
+
+
 function updateCities(meta) {
   const country = document.getElementById("countrySelect").value;
-  const cities = (meta.cities && meta.cities[country]) ? meta.cities[country] : [];
   const citySelect = document.getElementById("citySelect");
+  const cities = (meta.cities && meta.cities[country]) ? meta.cities[country] : [];
+
+  // If user opened the dropdown before we had data, show hint
+  setCityLoading(cities.length === 0);
+
   citySelect.innerHTML = cities.map(c => `<option value="${c}">${c}</option>`).join("");
-  
+
+  // Hide hint as soon as we have items
+  if (cities.length > 0) setCityLoading(false);
+
   // Do NOT auto-load categories; just update the button state
   citySelect.onchange = toggleButtonState;
   toggleButtonState();
-
 }
+
 function toggleButtonState() {
   const country = document.getElementById("countrySelect")?.value;
   const city = document.getElementById("citySelect")?.value;
@@ -222,6 +237,20 @@ function toggleButtonState() {
   if (kmlBtn) kmlBtn.disabled = !(country && city);
 
 }
+// Show "loading cities…" when user tries to open an empty/not-ready list
+(function attachCityLoadingHandlers(){
+  const sel = document.getElementById("citySelect");
+  if (!sel) return;
+  const showIfEmpty = () => {
+    const hasOptions = !!(sel.options && sel.options.length);
+    const metaReady = !!metaCache;
+    if (!hasOptions || !metaReady) setCityLoading(true);
+  };
+  sel.addEventListener("mousedown", showIfEmpty); // open on desktop
+  sel.addEventListener("focus", showIfEmpty);     // keyboard/tab
+  sel.addEventListener("click", showIfEmpty);     // some mobiles
+  sel.addEventListener("change", () => setCityLoading(false));
+})();
 
 
 /* ---------------- Categories Panel (Reused) ---------------- */

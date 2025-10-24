@@ -619,12 +619,20 @@
   margin-bottom: 5px;         /* new: creates a gap for the dropdown overlay */
 }
 
-/* Keep the help block BELOW the City select, right-aligned */
-.city-help-row{
-  position: relative;       /* anchor for the popover */
+/* Button (left) + help link (right) on the SAME line, no extra vertical gap */
+.actions-line{
   display: flex;
-  justify-content: flex-end;/* push link to the right */
-  margin: 8px 0 10px;       /* small gap below the City select, above the button */
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0 0;      /* same top margin you had for the button; no bottom gap */
+}
+
+/* Anchor popover to the right side block */
+.city-help-row{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
 }
 
 .city-help-link{
@@ -632,14 +640,14 @@
   color: #0b74ff;
   text-decoration: underline;
   cursor: pointer;
-  line-height: 1;           /* avoid extra vertical shift */
+  line-height: 1;
 }
 
-/* Popover anchored to the right edge of the help row */
+/* Popover: right-aligned, appears just below the link */
 .city-help-popover{
   position: absolute;
   right: 0;
-  top: calc(100% + 6px);    /* appears just under the link */
+  top: calc(100% + 6px);
   width: min(520px, 92vw);
   background: #fff;
   border: 1px solid #e3e3e3;
@@ -647,45 +655,22 @@
   border-radius: 10px;
   padding: 12px 14px;
   z-index: 2000;
-  display: none;            /* hidden by default */
+  display: none;
 }
 
-.city-help-popover p{
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-.city-help-popover a{
-  color: #0b74ff;
-  text-decoration: underline;
-}
+.city-help-popover p{ margin: 0; font-size: 13px; line-height: 1.4; }
+.city-help-popover a{ color: #0b74ff; text-decoration: underline; }
 
 .city-help-close{
-  position: absolute;
-  right: 8px;
-  top: 6px;
-  width: 24px;
-  height: 24px;
-  line-height: 22px;
-  text-align: center;
-  border: 0;
-  background: transparent;
-  font-size: 18px;
-  cursor: pointer;
-  color: #666;
+  position: absolute; right: 8px; top: 6px;
+  width: 24px; height: 24px; line-height: 22px;
+  border: 0; background: transparent; font-size: 18px; cursor: pointer; color: #666;
 }
 
-/* Open on hover; closes when pointer leaves the help area */
-.city-help-row:hover .city-help-popover{
-  display: block;
-}
+/* Open on hover; close when you leave the area (click still works on mobile) */
+.city-help-row:hover .city-help-popover{ display: block; }
 
-/* Small screens: a little more room */
 @media (max-width: 560px){
-  .city-help-row{ margin: 10px 0 12px; }
+  .actions-line{ gap: 8px; }
   .city-help-popover{ width: 92vw; }
 }
-
-
-

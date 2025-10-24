@@ -619,30 +619,27 @@
   margin-bottom: 5px;         /* new: creates a gap for the dropdown overlay */
 }
 
-/* --- City help link + popover (right-aligned, no extra layout space) --- */
+/* Keep the help block BELOW the City select, right-aligned */
 .city-help-row{
-  position: relative;
-  margin: 0;             /* no extra gap above the button */
-  height: 0;             /* remove this row from the flow */
+  position: relative;       /* anchor for the popover */
+  display: flex;
+  justify-content: flex-end;/* push link to the right */
+  margin: 8px 0 10px;       /* small gap below the City select, above the button */
 }
 
-/* Place the link at the right edge, just below the City select */
 .city-help-link{
-  position: absolute;
-  right: 0;
-  top: -18px;            /* adjust if you want closer/farther from the select */
-  display: inline-block;
   font-size: 13px;
   color: #0b74ff;
   text-decoration: underline;
   cursor: pointer;
+  line-height: 1;           /* avoid extra vertical shift */
 }
 
-/* Popover anchored to the right of the link */
+/* Popover anchored to the right edge of the help row */
 .city-help-popover{
   position: absolute;
   right: 0;
-  top: 4px;              /* appears just under the link */
+  top: calc(100% + 6px);    /* appears just under the link */
   width: min(520px, 92vw);
   background: #fff;
   border: 1px solid #e3e3e3;
@@ -650,7 +647,7 @@
   border-radius: 10px;
   padding: 12px 14px;
   z-index: 2000;
-  display: none;         /* hidden by default */
+  display: none;            /* hidden by default */
 }
 
 .city-help-popover p{
@@ -679,15 +676,16 @@
   color: #666;
 }
 
-/* Open on hover (and close when not hovering) */
+/* Open on hover; closes when pointer leaves the help area */
 .city-help-row:hover .city-help-popover{
   display: block;
 }
 
-/* Small-screen tweak */
+/* Small screens: a little more room */
 @media (max-width: 560px){
-  .city-help-link{ top: -16px; }
-  .city-help-popover{ top: 6px; padding: 12px; }
+  .city-help-row{ margin: 10px 0 12px; }
+  .city-help-popover{ width: 92vw; }
 }
+
 
 

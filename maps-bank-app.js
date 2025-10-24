@@ -94,11 +94,15 @@ window.initMap = function() {
   loadMeta();
 };
 
-(function initCityHelpPopover(){
+function initCityHelpPopover(){
   const link = document.getElementById('cityHelpLink');
-  const pop = document.getElementById('cityHelpPopover');
+  const pop  = document.getElementById('cityHelpPopover');
   const closeBtn = pop ? pop.querySelector('.city-help-close') : null;
   if (!link || !pop) return;
+
+  // Prevent double-binding if called twice
+  if (link.dataset.bound === '1') return;
+  link.dataset.bound = '1';
 
   const open = (e) => {
     e.preventDefault();
@@ -109,8 +113,10 @@ window.initMap = function() {
     pop.classList.remove('is-open');
     pop.setAttribute('aria-hidden', 'true');
   };
+
   link.addEventListener('click', open);
   if (closeBtn) closeBtn.addEventListener('click', close);
+
   document.addEventListener('click', (e) => {
     if (!pop.classList.contains('is-open')) return;
     const inside = pop.contains(e.target) || e.target === link;
@@ -119,7 +125,18 @@ window.initMap = function() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') close();
   });
-})();
+}
+
+// Bind after DOM is ready (covers cases where script loads early)
+document.addEventListener('DOMContentLoaded', initCityHelpPopover);
+// Also bind after map init (covers cases where content is injected later)
+if (typeof window.initMap === 'function') {
+  const _origInitMap = window.initMap;
+  window.initMap = function(){
+    _origInitMap.apply(this, arguments);
+    initCityHelpPopover();
+  };
+}
 
 // --- Fast countries preload (for faster dropdown) ---
 let preloadedCountries = [];

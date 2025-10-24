@@ -623,17 +623,18 @@
 .actions-line{
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;  /* button stays left */
   gap: 12px;
-  margin: 8px 0 0;      /* same top margin you had for the button; no bottom gap */
+  margin: 8px 0 0;              /* same spacing as before */
 }
 
-/* Anchor popover to the right side block */
 .city-help-row{
   position: relative;
   display: inline-flex;
   align-items: center;
+  margin-left: auto;            /* link block moves to the far right */
 }
+
 
 .city-help-link{
   font-size: 13px;

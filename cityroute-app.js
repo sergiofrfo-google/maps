@@ -47,6 +47,38 @@
     return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(i => i.value);
   }
 
+function startProgress(msg = "Preparing…") {
+  const p = document.getElementById("mv-progress");
+  const b = document.getElementById("mv-progress-bar");
+  const l = document.getElementById("mv-progress-label");
+  if (!p || !b || !l) return;
+  p.style.display = "block";
+  b.style.width = "8%";
+  l.textContent = msg;
+}
+function setProgress(pct, msg) {
+  const b = document.getElementById("mv-progress-bar");
+  const l = document.getElementById("mv-progress-label");
+  if (!b || !l) return;
+  b.style.width = Math.max(0, Math.min(100, pct)) + "%";
+  if (msg) l.textContent = msg;
+}
+function endProgress() {
+  const p = document.getElementById("mv-progress");
+  const b = document.getElementById("mv-progress-bar");
+  const l = document.getElementById("mv-progress-label");
+  if (!p || !b || !l) return;
+  b.style.width = "100%";
+  l.textContent = "Done";
+  setTimeout(() => { p.style.display = "none"; b.style.width = "0%"; }, 600);
+}
+function showSkeleton(show) {
+  const s = document.getElementById("mv-skeleton");
+  if (!s) return;
+  s.style.display = show ? "block" : "none";
+}
+
+
   const loadMaps = (() => {
     let p;
     return () => {
@@ -196,6 +228,69 @@
   }
   // Make available like before
   window.renderItinerary = renderItinerary;
+function renderItineraryWithDayTips(items, dayTipsObj, rootEl) {
+  const byDay = {};
+  (items || []).forEach(it => {
+    const d = Number(it.day) || 1;
+    (byDay[d] ||= []).push(it);
+  });
+
+  const parts = [];
+  Object.keys(byDay).sort((a,b)=>a-b).forEach(d => {
+    parts.push(`<h3 style=""margin:12px 0 6px;font-weight:600"">Day ${d}</h3>`);
+    parts.push('<ul style=""margin:0 0 12px 18px;padding:0"">');
+    byDay[d].forEach(it => {
+      const name = it.name || """";
+      const when = it.time || """";
+      const desc = it.description ? ` · <span style=""color:#6b7280"">${it.description}</span>` : """";
+      const gmaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}%20${encodeURIComponent(it.lat||"""")}%2C${encodeURIComponent(it.lng||"""")}`;
+      parts.push(
+        `<li style=""margin:8px 0"">
+          <span style=""font-weight:600"">${when}</span> — 
+          <a href=""${gmaps}"" target=""_blank"" rel=""noopener"">${name}</a>${desc}
+        </li>`
+      );
+    });
+    parts.push('</ul>');
+
+    const tip = dayTipsObj && (dayTipsObj[String(d)] || dayTipsObj[`day_${d}`]);
+    parts.push(
+      `<div class=""mv-day-tips"" data-day=""${d}"" style=""margin:8px 0 16px 0"">
+        ${tip ? `
+          <div style=""border-left:3px solid #e5e7eb;padding:8px 12px;background:#fafafa;border-radius:6px"">
+            <div style=""font-weight:600;margin-bottom:4px"">Day ${d} — Tips</div>
+            <p style=""margin:0"">${tip}</p>
+          </div>
+        ` : ``}
+      </div>`
+    );
+  });
+
+  rootEl.innerHTML = parts.join("""");
+}
+
+function appendCityTipsSection(cityTips) {
+  const rootEl = document.getElementById(""itinerary"");
+  if (!rootEl) return;
+
+  const blocks = Object.entries(cityTips || {}).reduce((acc,[k,arr])=>{
+    if (!Array.isArray(arr) || !arr.length) return acc;
+    acc.push(
+      `<div style=""margin:10px 0"">
+        <div style=""font-weight:600;text-transform:capitalize"">${k.replaceAll(""_"","" "")}</div>
+        <ul style=""margin:6px 0 0 18px"">${arr.map(t=>`<li>${t}</li>`).join("""")}</ul>
+      </div>`
+    );
+    return acc;
+  }, []).join("""");
+
+  const section = document.createElement(""div"");
+  section.innerHTML =
+    `<hr style=""border:none;height:1px;background:#e5e7eb;margin:16px 0"">
+     <h3 style=""font-weight:700;margin:0 0 8px"">City tips</h3>
+     ${blocks || ""<div style='color:#9ca3af'>No city tip categories selected.</div>""}`;
+  rootEl.appendChild(section);
+}
 
   // -------------------------------
   // 5. Map with filters (same)
@@ -870,74 +965,113 @@ window.shareItinerary = shareItinerary;
 
     // --- Form submission (same logic)
     form.addEventListener("submit", async function(e) {
-      e.preventDefault();
+  e.preventDefault();
 
-      statusEl.style.color = "#374151";
-      statusEl.textContent = "Generating your route…";
+  const statusEl = document.getElementById("mv-status");
+  let itineraryEl = document.getElementById("itinerary");
+  const form = e.currentTarget;
 
-      const formData = new FormData(form);
+  // === build your existing payload exactly as you already do (keep your current code here) ===
+  // NOTE: If your code already computes "payload", leave it as-is. We reuse it below.
+  const payload = (function buildPayloadFromForm(f) {
+    const fd = new FormData(f);
+    const pick = k => (fd.get(k) || "").toString().trim();
+    const pickAll = name => Array.from(f.querySelectorAll(`input[name="${name}"]:checked`)).map(i=>i.value);
+    return {
+      city: pick("city"),
+      country: pick("country"),
+      start_date: pick("start_date"),
+      end_date: pick("end_date"),
+      no_dates: fd.get("no_dates") ? "1" : "",
+      stay_days: pick("stay_days"),
+      categories: pickAll("categories").join(","),
+      mobility: pickAll("mobility").join(","),
+      tip_focus: pickAll("tip_focus").join(","),
+      pace: pick("pace"),
+      budget_value: pick("budget_value"),
+      budget_currency: pick("budget_currency"),
+      duration_value: pick("duration_value"),
+      duration_unit: pick("duration_unit"),
+      start_daypart: pick("start_daypart"),
+      extra_requests: pick("extra_requests"),
+      outputs: pickAll("outputs").join(","),
+      email: pick("email")
+    };
+  })(form);
 
-      let cityValue = formData.get("city");
-      if (cityValue === "__other__") {
-        cityValue = formData.get("city_other");
-      }
-      const countryValue = formData.get("country");
+  // === UI start ===
+  statusEl.style.color = "#374151";
+  statusEl.textContent = "";
+  startProgress("Validating inputs…");
+  showSkeleton(true);
 
-      const payload = {
-        city: cityValue,
-        country: countryValue,
+  // preload heavy libs in parallel while network requests run
+  const preloads = Promise.all([
+    (typeof loadMaps === "function" ? loadMaps() : Promise.resolve()).catch(()=>{}),
+    (typeof ensureJsPDF === "function" ? ensureJsPDF() : Promise.resolve()).catch(()=>{})
+  ]);
 
-        duration_value: formData.get("duration_value"),
-        duration_unit: formData.get("duration_unit"),
-        start_daypart: formData.get("start_daypart"),
+  function toFD(obj) {
+    const fd = new FormData();
+    Object.entries(obj).forEach(([k,v]) => fd.append(k, v ?? ""));
+    return fd;
+  }
 
-        categories: getAllChecked("categories").join(","),
-        mobility: getAllChecked("mobility").join(","),
-        tip_focus: getAllChecked("tip_focus").join(","),
+  // === Fire BOTH requests (as you required):
+  // 1) plan -> itinerary + day_tips (they are related, same response)
+  // 2) city_tips -> city-level tips only
+  setProgress(18, "Sending requests…");
 
-        extra_requests: formData.get("extra_requests"),
-        pace: formData.get("pace"),
-        budget_value: formData.get("budget_value"),
-        budget_currency: formData.get("budget_currency"),
+  const pPlan = fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    body: toFD({ ...payload, mode: "plan" })
+  }).then(r => r.json());
 
-        outputs: getAllChecked("outputs").join(","),
+  const pCityTips = fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    body: toFD({ ...payload, mode: "city_tips" })
+  }).then(r => r.json());
 
-        start_date: formData.get("start_date"),
-        end_date: formData.get("end_date"),
-        no_dates: formData.get("no_dates") ? "1" : "",
-        stay_days: formData.get("stay_days"),
+  // === 1) Render plan (itinerary + day_tips) as soon as it's ready ===
+  const planData = await pPlan.catch(err => ({ success:false, error: err.message }));
+  if (!planData?.success) {
+    showSkeleton(false);
+    endProgress();
+    statusEl.style.color = "red";
+    statusEl.textContent = "❌ " + (planData?.error || "Plan error");
+    return;
+  }
 
-        email: formData.get("email")
-      };
+  setProgress(42, "Rendering itinerary…");
+  form.style.display = "none";
+  if (!itineraryEl) itineraryEl = document.getElementById("itinerary");
+  itineraryEl.style.display = "block";
+  showSkeleton(false);
 
-      try {
-        const res = await fetch(APPS_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams(payload)
-        });
+  // Expected shape from GAS: { itinerary: [...], day_tips: { "1": "...", "2": "..." } }
+  const itineraryItems = Array.isArray(planData.result?.itinerary) ? planData.result.itinerary : [];
+  const dayTips = (planData.result && typeof planData.result.day_tips === "object") ? planData.result.day_tips : {};
 
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+  // Paint itinerary by day + per-day tips (combined)
+  renderItineraryWithDayTips(itineraryItems, dayTips, itineraryEl);
 
-        if (data.success) {
-          statusEl.textContent = "";
-          form.style.display = "none";
+  setProgress(62, "Preparing map…");
+  try { await preloads; } catch(_){}
+  try { (typeof buildEmbeddedMap === "function") && buildEmbeddedMap(itineraryItems, payload.city, payload.country); } catch(_){}
 
-          if (!itineraryEl) itineraryEl = document.getElementById("itinerary");
-          itineraryEl.style.display = "block";
+  // === 2) Append city tips when they arrive (non-blocking) ===
+  const cityTipsData = await pCityTips.catch(() => null);
+  if (cityTipsData?.success) {
+    setProgress(88, "Adding city tips…");
+    const cityTipsObj = (cityTipsData.result && typeof cityTipsData.result.city_tips === "object") ? cityTipsData.result.city_tips : {};
+    appendCityTipsSection(cityTipsObj);
+  }
 
-          renderItinerary(data.result, payload.city, payload.country);
-        } else {
-          statusEl.style.color = "red";
-          statusEl.textContent = "❌ Error: " + (data.error || "Unknown issue");
-        }
-      } catch (err) {
-        statusEl.style.color = "red";
-        statusEl.textContent = "❌ Network error: " + err.message;
-        console.error("Fetch error:", err);
-      }
-    });
+  setProgress(96, "Final touches…");
+  endProgress();
+  statusEl.textContent = "";
+});
+
   }
 
   // expose init for the loader

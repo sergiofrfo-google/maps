@@ -811,84 +811,81 @@ window.shareItinerary = shareItinerary;
   // 3. Date controls wiring (wired in init)
   // -------------------------------
 
-  // Helper: date controls (converted from your IIFE)
-  function wireDateControls(root){
-    const pick = (id, name) => document.getElementById(id) || root.querySelector(`[name="${name}"]`);
+// NEW: make this a function so it's not executed at top-level
+function wireDateControls(root = document){
+  const pick = (id, name) => document.getElementById(id) || root.querySelector(`[name="${name}"]`);
 
-    function init(){
-      const startEl = pick("start_date","start_date");
-      const endEl   = pick("end_date","end_date");
-      const freeCb  = pick("no_dates","no_dates");
-      const daysEl  = pick("stay_days","stay_days");
-      const festCb  = document.getElementById("cat_festivals");
+  function init(){
+    const startEl = pick("start_date","start_date");
+    const endEl   = pick("end_date","end_date");
+    const freeCb  = pick("no_dates","no_dates");
+    const daysEl  = pick("stay_days","stay_days");
+    const festCb  = document.getElementById("cat_festivals");
 
-      if (!startEl || !endEl || !freeCb || !daysEl) return false;
+    if (!startEl || !endEl || !freeCb || !daysEl) return false;
 
-      const today = new Date(); today.setHours(0,0,0,0);
-      const isoToday = today.toISOString().slice(0,10);
-      startEl.min = isoToday;
-      endEl.min   = isoToday;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const isoToday = today.toISOString().slice(0,10);
+    startEl.min = isoToday;
+    endEl.min   = isoToday;
 
-      daysEl.min = "1"; daysEl.max = "7";
-      const clamp7 = (n) => Math.max(1, Math.min(7, Math.floor(Number(n)||0)));
-      daysEl.addEventListener("input", () => { daysEl.value = daysEl.value ? clamp7(daysEl.value) : ""; });
+    function clamp7(n){ return Math.max(1, Math.min(7, Math.floor(Number(n)||0))); }
+    function calcDays(){
+      const s = new Date(startEl.value||isoToday);
+      const e = new Date(endEl.value||startEl.value||isoToday);
+      s.setHours(0,0,0,0); e.setHours(0,0,0,0);
+      if (e < s) { endEl.value = startEl.value; return calcDays(); }
+      const d = Math.floor((e - s)/86400000) + 1;
+      daysEl.value = clamp7(d);
+    }
 
-      function calcDays(){
-        if (freeCb.checked) return;
-        if (!startEl.value || !endEl.value) return;
-        const s = new Date(startEl.value + "T00:00:00");
-        const e = new Date(endEl.value   + "T00:00:00");
-        if (e < s) { endEl.value = startEl.value; return calcDays(); }
-        const d = Math.floor((e - s)/86400000) + 1;
-        daysEl.value = clamp7(d);
+    function enforceFestivalsRule(){
+      if (!festCb) return;
+      if (freeCb.checked){
+        festCb.checked = false;
+        festCb.disabled = true;
+        festCb.closest("label")?.setAttribute("title","Requires fixed dates");
+      } else {
+        festCb.disabled = false;
       }
+    }
 
-      function enforceFestivalsRule(){
-        if (!festCb) return;
-        if (freeCb.checked){
-          festCb.checked = false;
-          festCb.disabled = true;
-          festCb.closest("label")?.setAttribute("title","Requires fixed dates");
-        } else {
-          festCb.disabled = false;
-        }
-      }
-
-      function syncDisabled(){
-        if (freeCb.checked){
-          startEl.disabled = true; endEl.disabled = true;
-          startEl.value = ""; endEl.value = "";
-          daysEl.disabled  = false;
-        } else {
-          startEl.disabled = false; endEl.disabled = false;
-          daysEl.disabled  = true;
-          calcDays();
-        }
-        enforceFestivalsRule();
-      }
-
-      startEl.addEventListener("change", () => {
-        endEl.min = startEl.value || isoToday;
-        if (endEl.value && endEl.value < endEl.min) endEl.value = endEl.min;
+    function syncDisabled(){
+      if (freeCb.checked){
+        startEl.disabled = true; endEl.disabled = true;
+        startEl.value = ""; endEl.value = "";
+        daysEl.disabled  = false;
+      } else {
+        startEl.disabled = false; endEl.disabled = false;
+        daysEl.disabled  = true;
         calcDays();
-      });
-      endEl.addEventListener("change", calcDays);
-      freeCb.addEventListener("change", syncDisabled);
-
-      syncDisabled();
-      return true;
+      }
+      enforceFestivalsRule();
     }
 
-    if (!init()){
-      let tries = 0, t = setInterval(() => { if (init() || ++tries > 40) clearInterval(t); }, 100);
-    }
+    startEl.addEventListener("change", () => {
+      endEl.min = startEl.value || isoToday;
+      if (endEl.value && endEl.value < endEl.min) endEl.value = endEl.min;
+      calcDays();
+    });
+    endEl.addEventListener("change", calcDays);
+    freeCb.addEventListener("change", syncDisabled);
+
+    syncDisabled();
+    return true;
   }
+
+  if (!init()){
+    let tries = 0, t = setInterval(() => { if (init() || ++tries > 40) clearInterval(t); }, 100);
+  }
+}
 
   // -------------------------------
   // INIT — called after HTML is injected
   // -------------------------------
   function initCityRouteUI(root = document){
     // cache key elements (same IDs as before)
+     wireDateControls(root);
     const form = root.querySelector("#mv-form") || document.getElementById("mv-form");
     const statusEl = root.querySelector("#mv-status") || document.getElementById("mv-status");
 

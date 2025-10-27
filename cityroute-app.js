@@ -295,6 +295,19 @@ function appendCityTipsSection(cityTips) {
      ${blocks || "<div style='color:#9ca3af'>No city tip categories selected.</div>"}`;
   rootEl.appendChild(section);
 }
+function renderCityTipsIntoExistingContainer(rootEl, cityTips){
+  const label = k => (typeof TIP_LABELS === "object" && TIP_LABELS[k]) ? TIP_LABELS[k] : k.replaceAll("_"," ");
+  const blocks = Object.entries(cityTips || {}).map(([k,arr])=>{
+    if (!Array.isArray(arr) || !arr.length) return "";
+    return `
+      <div class="mv-tip-block" style="margin:10px 0">
+        <div class="mv-tip-title" style="font-weight:600">${label(k)}</div>
+        <ul class="mv-tip-list" style="margin:6px 0 0 18px">${arr.map(t=>`<li>${t}</li>`).join("")}</ul>
+      </div>`;
+  }).join("");
+  rootEl.innerHTML = blocks || "<div style='color:#9ca3af'>No city tip categories selected.</div>";
+}
+  
 
   // -------------------------------
   // 5. Map with filters (same)
@@ -1052,23 +1065,43 @@ function wireDateControls(root = document){
   showSkeleton(false);
 
   // Expected shape from GAS: { itinerary: [...], day_tips: { "1": "...", "2": "..." } }
-  const itineraryItems = Array.isArray(planData.result?.itinerary) ? planData.result.itinerary : [];
-  const dayTips = (planData.result && typeof planData.result.day_tips === "object") ? planData.result.day_tips : {};
-
-  // Paint itinerary by day + per-day tips (combined)
-  renderItineraryWithDayTips(itineraryItems, dayTips, itineraryEl);
-
-  setProgress(62, "Preparing map…");
-  try { await preloads; } catch(_){}
-  try { (typeof buildEmbeddedMap === "function") && buildEmbeddedMap(itineraryItems, payload.city, payload.country); } catch(_){}
+  // Expected shape: { itinerary: [...], day_tips: { "1": "...", "2": "..." } }
+   const itineraryItems = Array.isArray(planData.result?.itinerary) ? planData.result.itinerary : [];
+   const dayTips = (planData.result && typeof planData.result.day_tips === "object") ? planData.result.day_tips : {};
+   
+   // Compose a result object your ORIGINAL renderer understands:
+   // - keeps your previous layout, buttons, and map hooks
+   const combined = {
+     itinerary: itineraryItems,
+     recommendations: { per_day: dayTips }
+   };
+   
+   // Use your original renderer to keep styling and existing behaviors
+   renderItinerary(combined, payload.city, payload.country);
+   
+   // If your original renderer ALREADY builds the map internally, delete the next 4 lines.
+   // If it doesn't, keep them to preserve the map.
+   setProgress(62, "Preparing map…");
+   try { await preloads; } catch(_){}
+   try { buildEmbeddedMap?.(itineraryItems, payload.city, payload.country); } catch(_){}
 
   // === 2) Append city tips when they arrive (non-blocking) ===
-  const cityTipsData = await pCityTips.catch(() => null);
-  if (cityTipsData?.success) {
-    setProgress(88, "Adding city tips…");
-    const cityTipsObj = (cityTipsData.result && typeof cityTipsData.result.city_tips === "object") ? cityTipsData.result.city_tips : {};
-    appendCityTipsSection(cityTipsObj);
-  }
+   const cityTipsData = await pCityTips.catch(() => null);
+   if (cityTipsData?.success) {
+     setProgress(88, "Adding city tips…");
+     const cityTips = (cityTipsData.result && typeof cityTipsData.result.city_tips === "object")
+       ? cityTipsData.result.city_tips
+       : {};
+   
+     // Write into your existing tips container if present; otherwise fall back to helper.
+     const tipsRoot = document.getElementById("mv-city-tips");
+     if (tipsRoot) {
+       renderCityTipsIntoExistingContainer(tipsRoot, cityTips);
+     } else if (typeof appendCityTipsSection === "function") {
+       appendCityTipsSection(cityTips);
+     }
+   }
+
 
   setProgress(96, "Final touches…");
   endProgress();

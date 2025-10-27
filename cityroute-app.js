@@ -812,6 +812,7 @@ window.shareItinerary = shareItinerary;
   // -------------------------------
 
 // NEW: make this a function so it's not executed at top-level
+// wrap in a function so 'root' exists and nothing executes at top level
 function wireDateControls(root = document){
   const pick = (id, name) => document.getElementById(id) || root.querySelector(`[name="${name}"]`);
 
@@ -880,10 +881,14 @@ function wireDateControls(root = document){
   }
 }
 
+
   // -------------------------------
   // INIT — called after HTML is injected
   // -------------------------------
   function initCityRouteUI(root = document){
+
+         // --- Countries & Cities wiring (moved from top-level so it runs AFTER injection)
+    loadCountries();
     // cache key elements (same IDs as before)
      wireDateControls(root);
     const form = root.querySelector("#mv-form") || document.getElementById("mv-form");
@@ -896,8 +901,7 @@ function wireDateControls(root = document){
     // init containers
     itineraryEl = root.querySelector("#itinerary") || document.getElementById("itinerary");
 
-    // --- Countries & Cities wiring (moved from top-level so it runs AFTER injection)
-    loadCountries();
+
 
     const countryEl = document.getElementById("country");
     const cityEl = document.getElementById("city");
@@ -957,8 +961,6 @@ function wireDateControls(root = document){
       });
     }
 
-    // --- Date controls
-    wireDateControls(root);
 
     // --- Form submission (same logic)
     form.addEventListener("submit", async function(e) {
@@ -1070,6 +1072,11 @@ function wireDateControls(root = document){
 });
 
   }
+   
+// expose for WP inline caller + console
+if (typeof window !== "undefined") {
+  window.initCityRouteUI = initCityRouteUI;
+}
 
   // expose init for the loader
   window.initCityRouteUI = initCityRouteUI;

@@ -125,5 +125,25 @@
 
 <p id="mv-status" style="margin-top:12px;color:#374151"></p>
 
+<!-- Lightweight step progress (does not slow the app) -->
+<div id="mv-progress" style="display:none;max-width:720px;margin:8px auto 0">
+  <div id="mv-progress-label" style="font-size:12px;color:#6b7280;margin-bottom:6px">Preparing…</div>
+  <div style="height:8px;background:#e5e7eb;border-radius:9999px;overflow:hidden">
+    <div id="mv-progress-bar" style="height:8px;width:0%;background:#6366f1;transition:width .25s ease"></div>
+  </div>
+</div>
+
+<!-- Skeleton shown while we wait for first response -->
+<div id="mv-skeleton" style="display:none;max-width:720px;margin:16px auto;font-family:Inter,Arial,sans-serif">
+  <div style="height:14px;width:30%;background:#eee;border-radius:6px;margin:10px 0;animation:pulse 1.2s infinite"></div>
+  <div style="height:10px;width:80%;background:#eee;border-radius:6px;margin:8px 0;animation:pulse 1.2s infinite"></div>
+  <div style="height:10px;width:70%;background:#eee;border-radius:6px;margin:8px 0;animation:pulse 1.2s infinite"></div>
+  <div style="height:10px;width:60%;background:#eee;border-radius:6px;margin:8px 0;animation:pulse 1.2s infinite"></div>
+  <style>
+    @keyframes pulse { 0%{opacity:.6} 50%{opacity:1} 100%{opacity:.6} }
+  </style>
+</div>
+
 <!-- Itinerary container (hidden by default) -->
 <div id="itinerary" style="display:none;max-width:720px;margin:auto;font-family:Inter,Arial,sans-serif;"></div>
+

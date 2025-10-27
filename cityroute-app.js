@@ -194,12 +194,14 @@ function showSkeleton(show) {
     if (hasAnyAllowed(cityTips)) {
       html += `<div style="padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#fafafa;margin:8px 0 16px">
         <div style="font-weight:700;margin-bottom:8px">City tips</div>`;
+      // --- replace the broken city-tips rendering inside renderItinerary ---
       Object.keys(cityTips).forEach(k => {
         html += `<div style="margin:6px 0">
-          <div style="font-weight:600">${{transportation:"Transportation",security:"Security",saving:"Saving",weather_clothing:"Weather/Clothing",cultural:"Cultural",local_hacks:"Local hacks"}[k]}</div>
+          <div style="font-weight:600">${TIP_LABELS[k] || k}</div>
           <ul style="margin:6px 0 0 18px">${cityTips[k].map(t => `<li>${t}</li>`).join("")}</ul>
         </div>`;
       });
+
       html += `</div>`;
     }
 
@@ -228,6 +230,7 @@ function showSkeleton(show) {
   }
   // Make available like before
   window.renderItinerary = renderItinerary;
+// --- corrected renderItineraryWithDayTips ---
 function renderItineraryWithDayTips(items, dayTipsObj, rootEl) {
   const byDay = {};
   (items || []).forEach(it => {
@@ -237,58 +240,59 @@ function renderItineraryWithDayTips(items, dayTipsObj, rootEl) {
 
   const parts = [];
   Object.keys(byDay).sort((a,b)=>a-b).forEach(d => {
-    parts.push(`<h3 style=""margin:12px 0 6px;font-weight:600"">Day ${d}</h3>`);
-    parts.push('<ul style=""margin:0 0 12px 18px;padding:0"">');
+    parts.push(`<h3 style="margin:12px 0 6px;font-weight:600">Day ${d}</h3>`);
+    parts.push('<ul style="margin:0 0 12px 18px;padding:0">');
     byDay[d].forEach(it => {
-      const name = it.name || """";
-      const when = it.time || """";
-      const desc = it.description ? ` · <span style=""color:#6b7280"">${it.description}</span>` : """";
-      const gmaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}%20${encodeURIComponent(it.lat||"""")}%2C${encodeURIComponent(it.lng||"""")}`;
+      const name = it.name || "";
+      const when = it.time || "";
+      const desc = it.description ? ` · <span style="color:#6b7280">${it.description}</span>` : "";
+      const gmaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}%20${encodeURIComponent(it.lat||"")}%2C${encodeURIComponent(it.lng||"")}`;
       parts.push(
-        `<li style=""margin:8px 0"">
-          <span style=""font-weight:600"">${when}</span> — 
-          <a href=""${gmaps}"" target=""_blank"" rel=""noopener"">${name}</a>${desc}
+        `<li style="margin:8px 0">
+          <span style="font-weight:600">${when}</span> — 
+          <a href="${gmaps}" target="_blank" rel="noopener">${name}</a>${desc}
         </li>`
       );
     });
     parts.push('</ul>');
 
-    const tip = dayTipsObj && (dayTipsObj[String(d)] || dayTipsObj[`day_${d}`]);
+    const tip = (dayTipsObj && (dayTipsObj[String(d)] || dayTipsObj[`day_${d}`])) || "";
     parts.push(
-      `<div class=""mv-day-tips"" data-day=""${d}"" style=""margin:8px 0 16px 0"">
+      `<div class="mv-day-tips" data-day="${d}" style="margin:8px 0 16px 0">
         ${tip ? `
-          <div style=""border-left:3px solid #e5e7eb;padding:8px 12px;background:#fafafa;border-radius:6px"">
-            <div style=""font-weight:600;margin-bottom:4px"">Day ${d} — Tips</div>
-            <p style=""margin:0"">${tip}</p>
+          <div style="border-left:3px solid #e5e7eb;padding:8px 12px;background:#fafafa;border-radius:6px">
+            <div style="font-weight:600;margin-bottom:4px">Day ${d} — Tips</div>
+            <p style="margin:0">${tip}</p>
           </div>
         ` : ``}
       </div>`
     );
   });
 
-  rootEl.innerHTML = parts.join("""");
+  rootEl.innerHTML = parts.join("");
 }
 
+// --- corrected appendCityTipsSection ---
 function appendCityTipsSection(cityTips) {
-  const rootEl = document.getElementById(""itinerary"");
+  const rootEl = document.getElementById("itinerary");
   if (!rootEl) return;
 
   const blocks = Object.entries(cityTips || {}).reduce((acc,[k,arr])=>{
     if (!Array.isArray(arr) || !arr.length) return acc;
     acc.push(
-      `<div style=""margin:10px 0"">
-        <div style=""font-weight:600;text-transform:capitalize"">${k.replaceAll(""_"","" "")}</div>
-        <ul style=""margin:6px 0 0 18px"">${arr.map(t=>`<li>${t}</li>`).join("""")}</ul>
+      `<div style="margin:10px 0">
+        <div style="font-weight:600;text-transform:capitalize">${k.replaceAll("_"," ")}</div>
+        <ul style="margin:6px 0 0 18px">${arr.map(t=>`<li>${t}</li>`).join("")}</ul>
       </div>`
     );
     return acc;
-  }, []).join("""");
+  }, []).join("");
 
-  const section = document.createElement(""div"");
+  const section = document.createElement("div");
   section.innerHTML =
-    `<hr style=""border:none;height:1px;background:#e5e7eb;margin:16px 0"">
-     <h3 style=""font-weight:700;margin:0 0 8px"">City tips</h3>
-     ${blocks || ""<div style='color:#9ca3af'>No city tip categories selected.</div>""}`;
+    `<hr style="border:none;height:1px;background:#e5e7eb;margin:16px 0">
+     <h3 style="font-weight:700;margin:0 0 8px">City tips</h3>
+     ${blocks || "<div style='color:#9ca3af'>No city tip categories selected.</div>"}`;
   rootEl.appendChild(section);
 }
 

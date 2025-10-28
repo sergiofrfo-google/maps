@@ -994,7 +994,7 @@ function wireDateControls(root = document){
     const pick = k => (fd.get(k) || "").toString().trim();
     const pickAll = name => Array.from(f.querySelectorAll(`input[name="${name}"]:checked`)).map(i=>i.value);
     return {
-      city: pick("city"),
+      city: (pick("city") === "__other__" ? pick("city_other") : pick("city")),
       country: pick("country"),
       start_date: pick("start_date"),
       end_date: pick("end_date"),
@@ -1048,64 +1048,64 @@ function wireDateControls(root = document){
     body: toFD({ ...payload, mode: "city_tips" })
   }).then(r => r.json());
 
-  // === 1) Render plan (itinerary + day_tips) as soon as it's ready ===
-  const planData = await pPlan.catch(err => ({ success:false, error: err.message }));
-  if (!planData?.success) {
+  // === Process whichever arrives first, then append the other ===
+const handlePlan = async (planData) => {
+  const ok = planData && planData.success;
+  if (!ok) {
     showSkeleton(false);
     endProgress();
     statusEl.style.color = "red";
     statusEl.textContent = "❌ " + (planData?.error || "Plan error");
     return;
   }
-
   setProgress(42, "Rendering itinerary…");
   form.style.display = "none";
-  if (!itineraryEl) itineraryEl = document.getElementById("itinerary");
   itineraryEl.style.display = "block";
   showSkeleton(false);
 
-  // Expected shape from GAS: { itinerary: [...], day_tips: { "1": "...", "2": "..." } }
-  // Expected shape: { itinerary: [...], day_tips: { "1": "...", "2": "..." } }
-   const itineraryItems = Array.isArray(planData.result?.itinerary) ? planData.result.itinerary : [];
-   const dayTips = (planData.result && typeof planData.result.day_tips === "object") ? planData.result.day_tips : {};
-   
-   // Compose a result object your ORIGINAL renderer understands:
-   // - keeps your previous layout, buttons, and map hooks
-   const combined = {
-     itinerary: itineraryItems,
-     recommendations: { per_day: dayTips }
-   };
-   
-   // Use your original renderer to keep styling and existing behaviors
-   renderItinerary(combined, payload.city, payload.country);
-   
-   // If your original renderer ALREADY builds the map internally, delete the next 4 lines.
-   // If it doesn't, keep them to preserve the map.
-   setProgress(62, "Preparing map…");
-   try { await preloads; } catch(_){}
-   try { buildEmbeddedMap?.(itineraryItems, payload.city, payload.country); } catch(_){}
+  const itineraryItems = Array.isArray(planData.result?.itinerary) ? planData.result.itinerary : [];
+  const dayTips = (planData.result && typeof planData.result.day_tips === "object") ? planData.result.day_tips : {};
 
-  // === 2) Append city tips when they arrive (non-blocking) ===
-   const cityTipsData = await pCityTips.catch(() => null);
-   if (cityTipsData?.success) {
-     setProgress(88, "Adding city tips…");
-     const cityTips = (cityTipsData.result && typeof cityTipsData.result.city_tips === "object")
-       ? cityTipsData.result.city_tips
-       : {};
-   
-     // Write into your existing tips container if present; otherwise fall back to helper.
-     const tipsRoot = document.getElementById("mv-city-tips");
-     if (tipsRoot) {
-       renderCityTipsIntoExistingContainer(tipsRoot, cityTips);
-     } else if (typeof appendCityTipsSection === "function") {
-       appendCityTipsSection(cityTips);
-     }
-   }
+  // Use your ORIGINAL renderer so UI, buttons, and styles remain
+  const combined = { itinerary: itineraryItems, recommendations: { per_day: dayTips } };
+  renderItinerary(combined, payload.city, payload.country);
 
+  setProgress(62, "Preparing map…");
+  try { await preloads; } catch(_){}
+  try { buildEmbeddedMap?.(itineraryItems, payload.city, payload.country); } catch(_){}
+};
 
-  setProgress(96, "Final touches…");
-  endProgress();
-  statusEl.textContent = "";
+const handleCity = async (cityTipsData) => {
+  if (cityTipsData?.success) {
+    setProgress(88, "Adding city tips…");
+    const cityTips = (cityTipsData.result && typeof cityTipsData.result.city_tips === "object")
+      ? cityTipsData.result.city_tips
+      : {};
+    const tipsRoot = document.getElementById("mv-city-tips");
+    if (tipsRoot) {
+      renderCityTipsIntoExistingContainer(tipsRoot, cityTips);
+    } else if (typeof appendCityTipsSection === "function") {
+      appendCityTipsSection(cityTips);
+    }
+  }
+};
+
+// Paint the one that finishes first
+await Promise.race([
+  pPlan.then(handlePlan),
+  pCityTips.then(handleCity)
+]);
+
+// Then make sure the other one also paints
+await Promise.allSettled([
+  pPlan.then(handlePlan).catch(()=>{}),
+  pCityTips.then(handleCity).catch(()=>{})
+]);
+
+setProgress(96, "Final touches…");
+endProgress();
+statusEl.textContent = "";
+
 });
 
   }

@@ -1049,7 +1049,7 @@ function wireDateControls(root = document){
   }).then(r => r.json());
    let planRendered = false;
    let pendingCityTips = null;
-
+   let cityTipsAppended = false;
 
   // === Process whichever arrives first, then append the other ===
 const handlePlan = async (planData) => {
@@ -1073,19 +1073,23 @@ const handlePlan = async (planData) => {
   const combined = { itinerary: itineraryItems, recommendations: { per_day: dayTips } };
   renderItinerary(combined, payload.city, payload.country);
 
-  setProgress(62, "Preparing map…");
-  try { await preloads; } catch(_){}
-  try { buildEmbeddedMap?.(itineraryItems, payload.city, payload.country); } catch(_){}
-   planRendered = true;
-if (pendingCityTips) {
+   setProgress(62, "Building map…");
+   try { await preloads; } catch(_){}
+   try { buildEmbeddedMap?.(itineraryItems, payload.city, payload.country); } catch(_){}
+   setProgress(78, "Map ready");
+
+  planRendered = true;
+if (pendingCityTips && !cityTipsAppended) {
   const tipsRoot = document.getElementById("mv-city-tips");
   if (tipsRoot) {
     renderCityTipsIntoExistingContainer(tipsRoot, pendingCityTips);
   } else if (typeof appendCityTipsSection === "function") {
     appendCityTipsSection(pendingCityTips);
   }
+  cityTipsAppended = true;
   pendingCityTips = null;
 }
+
 
 };
 
@@ -1096,14 +1100,15 @@ const handleCity = async (cityTipsData) => {
     ? cityTipsData.result.city_tips
     : {};
 
-  // If the plan isn't on screen yet, buffer tips (renderer will wipe innerHTML)
+  // If plan UI not visible yet, buffer tips
   if (!planRendered || (itineraryEl && itineraryEl.style.display === "none")) {
     setProgress(42, "City tips ready…");
     pendingCityTips = cityTips;
     return;
   }
 
-  // Otherwise append now
+  // Append only once
+  if (cityTipsAppended) return;
   setProgress(88, "Adding city tips…");
   const tipsRoot = document.getElementById("mv-city-tips");
   if (tipsRoot) {
@@ -1111,7 +1116,9 @@ const handleCity = async (cityTipsData) => {
   } else if (typeof appendCityTipsSection === "function") {
     appendCityTipsSection(cityTips);
   }
+  cityTipsAppended = true;
 };
+
 
 
 // Paint the one that finishes first

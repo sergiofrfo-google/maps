@@ -274,8 +274,15 @@ function renderItineraryWithDayTips(items, dayTipsObj, rootEl) {
 
 // --- corrected appendCityTipsSection ---
 function appendCityTipsSection(cityTips) {
-  const rootEl = document.getElementById("itinerary");
-  if (!rootEl) return;
+  const wrapEl = document.getElementById("itinerary");
+   if (!wrapEl) return;
+   let rootEl = wrapEl.querySelector("#mv-plan");
+   if (!rootEl) {
+     rootEl = document.createElement("div");
+     rootEl.id = "mv-plan";
+     wrapEl.appendChild(rootEl);
+   }
+
 
   const blocks = Object.entries(cityTips || {}).reduce((acc,[k,arr])=>{
     if (!Array.isArray(arr) || !arr.length) return acc;
@@ -1064,6 +1071,22 @@ const handlePlan = async (planData) => {
   setProgress(42, "Rendering itinerary…");
   form.style.display = "none";
   itineraryEl.style.display = "block";
+   // Ensure dedicated roots so plan and tips can render independently
+   (function ensureItinContainers(){
+     const wrap = document.getElementById("itinerary");
+     if (!wrap) return;
+     if (!wrap.querySelector("#mv-plan")) {
+       const d = document.createElement("div");
+       d.id = "mv-plan";
+       wrap.appendChild(d);
+     }
+     if (!wrap.querySelector("#mv-city-tips")) {
+       const d = document.createElement("div");
+       d.id = "mv-city-tips";
+       wrap.appendChild(d);
+     }
+   })();
+
   showSkeleton(false);
 
   const itineraryItems = Array.isArray(planData.result?.itinerary) ? planData.result.itinerary : [];

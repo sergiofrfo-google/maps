@@ -1047,6 +1047,9 @@ function wireDateControls(root = document){
     method: "POST",
     body: toFD({ ...payload, mode: "city_tips" })
   }).then(r => r.json());
+   let planRendered = false;
+   let pendingCityTips = null;
+
 
   // === Process whichever arrives first, then append the other ===
 const handlePlan = async (planData) => {
@@ -1073,34 +1076,62 @@ const handlePlan = async (planData) => {
   setProgress(62, "Preparing map…");
   try { await preloads; } catch(_){}
   try { buildEmbeddedMap?.(itineraryItems, payload.city, payload.country); } catch(_){}
+   planRendered = true;
+if (pendingCityTips) {
+  const tipsRoot = document.getElementById("mv-city-tips");
+  if (tipsRoot) {
+    renderCityTipsIntoExistingContainer(tipsRoot, pendingCityTips);
+  } else if (typeof appendCityTipsSection === "function") {
+    appendCityTipsSection(pendingCityTips);
+  }
+  pendingCityTips = null;
+}
+
 };
 
 const handleCity = async (cityTipsData) => {
-  if (cityTipsData?.success) {
-    setProgress(88, "Adding city tips…");
-    const cityTips = (cityTipsData.result && typeof cityTipsData.result.city_tips === "object")
-      ? cityTipsData.result.city_tips
-      : {};
-    const tipsRoot = document.getElementById("mv-city-tips");
-    if (tipsRoot) {
-      renderCityTipsIntoExistingContainer(tipsRoot, cityTips);
-    } else if (typeof appendCityTipsSection === "function") {
-      appendCityTipsSection(cityTips);
-    }
+  if (!cityTipsData?.success) return;
+
+  const cityTips = (cityTipsData.result && typeof cityTipsData.result.city_tips === "object")
+    ? cityTipsData.result.city_tips
+    : {};
+
+  // If the plan isn't on screen yet, buffer tips (renderer will wipe innerHTML)
+  if (!planRendered || (itineraryEl && itineraryEl.style.display === "none")) {
+    setProgress(42, "City tips ready…");
+    pendingCityTips = cityTips;
+    return;
+  }
+
+  // Otherwise append now
+  setProgress(88, "Adding city tips…");
+  const tipsRoot = document.getElementById("mv-city-tips");
+  if (tipsRoot) {
+    renderCityTipsIntoExistingContainer(tipsRoot, cityTips);
+  } else if (typeof appendCityTipsSection === "function") {
+    appendCityTipsSection(cityTips);
   }
 };
 
+
 // Paint the one that finishes first
+let planHandled = false;
+let cityHandled = false;
+
+// Paint whichever finishes first
 await Promise.race([
-  pPlan.then(handlePlan),
-  pCityTips.then(handleCity)
+  pPlan.then(d => { planHandled = true; return handlePlan(d); }),
+  pCityTips.then(d => { cityHandled = true; return handleCity(d); })
 ]);
 
-// Then make sure the other one also paints
-await Promise.allSettled([
-  pPlan.then(handlePlan).catch(()=>{}),
-  pCityTips.then(handleCity).catch(()=>{})
-]);
+// Then paint whichever is still pending (only once)
+if (!planHandled) {
+  await pPlan.then(handlePlan).catch(()=>{});
+}
+if (!cityHandled) {
+  await pCityTips.then(handleCity).catch(()=>{});
+}
+
 
 setProgress(96, "Final touches…");
 endProgress();

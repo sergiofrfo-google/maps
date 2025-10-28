@@ -148,6 +148,16 @@ function showSkeleton(show) {
     const hasAnyAllowed = (obj) =>
       !!obj && Object.keys(obj).some(k => Array.isArray(obj[k]) && obj[k].length);
 
+     // use the dedicated plan container so city tips can render independently
+   const wrapEl = document.getElementById("itinerary");
+   if (!wrapEl) return;
+   let planRoot = wrapEl.querySelector("#mv-plan");
+   if (!planRoot) {
+     planRoot = document.createElement("div");
+     planRoot.id = "mv-plan";
+     wrapEl.appendChild(planRoot);
+   }
+
     let html = "";
 
     days.forEach(day => {
@@ -215,7 +225,7 @@ function showSkeleton(show) {
         <button id="backBtn" style="margin-left:auto;">🔄 Generate another route</button>
       </div>`;
 
-    itineraryEl.innerHTML = html;
+    planRoot.innerHTML = html;
 
     // form/status come from init; store them on window so this function can access
     const form = window.cityrouteForm;
@@ -993,6 +1003,27 @@ function wireDateControls(root = document){
   const statusEl = document.getElementById("mv-status");
   let itineraryEl = document.getElementById("itinerary");
   const form = e.currentTarget;
+   // show results area right now, so whichever request finishes first can render
+form.style.display = "none";
+itineraryEl.style.display = "block";
+showSkeleton(true);
+
+// ensure dedicated roots so plan and tips don’t overwrite each other
+(function ensureItinContainers(){
+  const wrap = itineraryEl || document.getElementById("itinerary");
+  if (!wrap) return;
+  if (!wrap.querySelector("#mv-plan")) {
+    const d = document.createElement("div");
+    d.id = "mv-plan";
+    wrap.appendChild(d);
+  }
+  if (!wrap.querySelector("#mv-city-tips")) {
+    const d = document.createElement("div");
+    d.id = "mv-city-tips";
+    wrap.appendChild(d);
+  }
+})();
+
 
   // === build your existing payload exactly as you already do (keep your current code here) ===
   // NOTE: If your code already computes "payload", leave it as-is. We reuse it below.
@@ -1069,25 +1100,9 @@ const handlePlan = async (planData) => {
     return;
   }
   setProgress(42, "Rendering itinerary…");
-  form.style.display = "none";
-  itineraryEl.style.display = "block";
-   // Ensure dedicated roots so plan and tips can render independently
-   (function ensureItinContainers(){
-     const wrap = document.getElementById("itinerary");
-     if (!wrap) return;
-     if (!wrap.querySelector("#mv-plan")) {
-       const d = document.createElement("div");
-       d.id = "mv-plan";
-       wrap.appendChild(d);
-     }
-     if (!wrap.querySelector("#mv-city-tips")) {
-       const d = document.createElement("div");
-       d.id = "mv-city-tips";
-       wrap.appendChild(d);
-     }
-   })();
+   // form was already hidden at submit; just hide the skeleton now
+   showSkeleton(false);
 
-  showSkeleton(false);
 
   const itineraryItems = Array.isArray(planData.result?.itinerary) ? planData.result.itinerary : [];
   const dayTips = (planData.result && typeof planData.result.day_tips === "object") ? planData.result.day_tips : {};
@@ -1100,6 +1115,7 @@ const handlePlan = async (planData) => {
    try { await preloads; } catch(_){}
    try { buildEmbeddedMap?.(itineraryItems, payload.city, payload.country); } catch(_){}
    setProgress(78, "Map ready");
+
 
   planRendered = true;
 if (pendingCityTips && !cityTipsAppended) {

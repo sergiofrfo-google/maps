@@ -1162,11 +1162,8 @@ const handleCity = async (cityTipsData) => {
   if (cityTipsAppended) return;
   setProgress(88, "Adding city tips…");
   const tipsRoot = document.getElementById("mv-city-tips");
-  if (tipsRoot) {
-    renderCityTipsIntoExistingContainer(tipsRoot, cityTips);
-  } else if (typeof appendCityTipsSection === "function") {
-    appendCityTipsSection(cityTips);
-  }
+   renderCityTipsIntoExistingContainer(tipsRoot, cityTips);
+
   cityTipsAppended = true;
 };
 

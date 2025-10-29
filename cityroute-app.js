@@ -924,6 +924,25 @@ function wireDateControls(root = document){
     let tries = 0, t = setInterval(() => { if (init() || ++tries > 40) clearInterval(t); }, 100);
   }
 }
+   
+function mvClearPreviousOutput() {
+  // results (days + buttons live here)
+  const results = document.getElementById("mv-results");
+  if (results) results.innerHTML = "";
+
+  // tips (the helper renders into this container)
+  const tips = document.getElementById("mv-city-tips");
+  if (tips) tips.innerHTML = "";
+
+  // map (simple reset so you don't see previous markers while loading)
+  const mapWrap = document.getElementById("mv-map-wrap");
+  if (mapWrap) {
+    mapWrap.innerHTML = `<div id="mv-map"></div>`;
+  } else {
+    const map = document.getElementById("mv-map");
+    if (map) map.innerHTML = "";
+  }
+}
 
 
   // -------------------------------
@@ -1009,6 +1028,8 @@ function wireDateControls(root = document){
     // --- Form submission (same logic)
     form.addEventListener("submit", async function(e) {
   e.preventDefault();
+   mvClearPreviousOutput();  // <-- clear old itinerary/tips/map immediately
+
 
   const statusEl = document.getElementById("mv-status");
   let itineraryEl = document.getElementById("itinerary");

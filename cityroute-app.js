@@ -160,43 +160,53 @@ function showSkeleton(show) {
 
     let html = "";
 
-    days.forEach(day => {
-      const stops = itinerary.filter(i => i.day === day);
+// wrap all days in a responsive 2-column grid
+   html += `<div class="mv-days-grid">`;
+   
+   days.forEach(day => {
+     const stops = itinerary.filter(i => i.day === day);
+   
+     // build the list of stops (same content, but classed for CSS)
+     const stopsHtml = stops.map(stop => {
+       const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((stop.name||"") + ", " + city + (country ? ", " + country : ""))}`;
+       return `
+         <li>
+           <strong>${stop.time ? stop.time + " — " : ""}${stop.name || ""}</strong>
+           <a class="mv-day-place-link" href="${mapUrl}" target="_blank" title="View on Google Maps">
+             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#2563eb" viewBox="0 0 16 16">
+               <path d="M8 0C4.686 0 2 2.686 2 6c0 4.5 6 10 6 10s6-5.5 6-10  -2.686-6-6-6zm0 8.5A2.5 2.5 0 1 1 8 3.5a2.5 2.5 0 0 1 0 5z"/>
+             </svg>
+           </a><br>
+           <em>${stop.description || ""}</em>
+         </li>`;
+     }).join("");
+   
+     // optional directions + per-day tip
+     let extras = "";
+     if (stops.length > 1) {
+       const origin = encodeURIComponent(stops[0].name + ", " + city + (country ? ", " + country : ""));
+       const destination = encodeURIComponent(stops[stops.length - 1].name + ", " + city + (country ? ", " + country : ""));
+       const waypoints = stops.slice(1, -1).map(s => encodeURIComponent(s.name + ", " + city + (country ? ", " + country : ""))).join("|");
+       const directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypoints ? "&waypoints=" + waypoints : ""}`;
+       extras += `<p class="mv-day-dir"><a href="${directionsUrl}" target="_blank">🗺️ Full directions for Day ${day}</a></p>`;
+     }
+     const dailyTip = recommendations?.per_day?.[`day_${day}`];
+     if (dailyTip && String(dailyTip).trim()) {
+       extras += `<div class="mv-day-tip"><strong>Tip for Day ${day}:</strong> ${dailyTip}</div>`;
+     }
+   
+     // the card
+     html += `
+       <section class="mv-day-card">
+         <h3 class="mv-day-title">Day ${day}</h3>
+         <ul class="mv-day-list">${stopsHtml}</ul>
+         ${extras}
+       </section>
+     `;
+   });
+   
+   html += `</div>`; // end .mv-days-grid
 
-      html += `<h3 style="margin-top:20px;">Day ${day}</h3><ul>`;
-      stops.forEach(stop => {
-        const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((stop.name||"") + ", " + city + (country ? ", " + country : ""))}`;
-        html += `
-          <li style="margin:8px 0;">
-            <strong>${stop.time ? stop.time + " — " : ""}${stop.name || ""}</strong>
-            <a href="${mapUrl}" target="_blank" title="View on Google Maps"
-              style="margin-left:6px;display:inline-flex;align-items:center;vertical-align:middle;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#2563eb" viewBox="0 0 16 16">
-                <path d="M8 0C4.686 0 2 2.686 2 6c0 4.5 6 10 6 10s6-5.5 6-10c0-3.314-2.686-6-6-6zm0 8.5A2.5 2.5 0 1 1 8 3.5a2.5 2.5 0 0 1 0 5z"/>
-              </svg>
-            </a><br>
-            <em>${stop.description || ""}</em>
-          </li>`;
-      });
-      html += "</ul>";
-
-      if (stops.length > 1) {
-        const origin = encodeURIComponent(stops[0].name + ", " + city + (country ? ", " + country : ""));
-        const destination = encodeURIComponent(stops[stops.length - 1].name + ", " + city + (country ? ", " + country : ""));
-        const waypoints = stops.slice(1, -1).map(s => encodeURIComponent(s.name + ", " + city + (country ? ", " + country : ""))).join("|");
-        const directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypoints ? "&waypoints=" + waypoints : ""}`;
-        html += `<p style="margin-top:6px"><a href="${directionsUrl}" target="_blank" style="color:#2563eb;display:inline-flex;align-items:center;">
-                  🗺️ Full directions for Day ${day}
-                </a></p>`;
-      }
-
-      const dailyTip = recommendations?.per_day?.[`day_${day}`];
-      if (dailyTip && String(dailyTip).trim()) {
-        html += `<div style="margin-top:8px;color:#374151">
-          <strong>Tip for Day ${day}:</strong> ${dailyTip}
-        </div>`;
-      }
-    });
 
     html += `<div id="mv-map" style="width:100%;height:520px;border:1px solid #e5e7eb;border-radius:12px;margin:16px 0;"></div>`;
 

@@ -149,7 +149,7 @@ function showSkeleton(show) {
       !!obj && Object.keys(obj).some(k => Array.isArray(obj[k]) && obj[k].length);
 
      // use the dedicated plan container so city tips can render independently
-   const wrapEl = document.getElementById("itinerary");
+    = document.getElementById("itinerary");
    if (!wrapEl) return;
    let planRoot = wrapEl.querySelector("#mv-plan");
    if (!planRoot) {
@@ -161,7 +161,7 @@ function showSkeleton(show) {
     let html = "";
 
      // use the dedicated plan container so city tips can render independently
-      const wrapEl = document.getElementById("itinerary");
+       = document.getElementById("itinerary");
       if (!wrapEl) return;
       let planRoot = wrapEl.querySelector("#mv-plan");
       if (!planRoot) {
@@ -281,14 +281,13 @@ function renderItineraryWithDayTips(items, dayTipsObj, rootEl) {
 // --- corrected appendCityTipsSection ---
 function appendCityTipsSection(cityTips) {
   const wrapEl = document.getElementById("itinerary");
-   if (!wrapEl) return;
-   let rootEl = wrapEl.querySelector("#mv-plan");
-   if (!rootEl) {
-     rootEl = document.createElement("div");
-     rootEl.id = "mv-plan";
-     wrapEl.appendChild(rootEl);
-   }
-
+if (!wrapEl) return;
+let rootEl = wrapEl.querySelector("#mv-city-tips");
+if (!rootEl) {
+  rootEl = document.createElement("div");
+  rootEl.id = "mv-city-tips";
+  wrapEl.appendChild(rootEl);
+}
 
   const blocks = Object.entries(cityTips || {}).reduce((acc,[k,arr])=>{
     if (!Array.isArray(arr) || !arr.length) return acc;

@@ -4,7 +4,7 @@
 */
 
 (() => {
-  'use strict';
+  "use strict";
 
   // -------------------------------
   // 0. Countries & Cities loader
@@ -149,7 +149,7 @@ function showSkeleton(show) {
       !!obj && Object.keys(obj).some(k => Array.isArray(obj[k]) && obj[k].length);
 
      // use the dedicated plan container so city tips can render independently
-    = document.getElementById("itinerary");
+   const wrapEl = document.getElementById("itinerary");
    if (!wrapEl) return;
    let planRoot = wrapEl.querySelector("#mv-plan");
    if (!planRoot) {
@@ -159,17 +159,6 @@ function showSkeleton(show) {
    }
 
     let html = "";
-
-     // use the dedicated plan container so city tips can render independently
-       = document.getElementById("itinerary");
-      if (!wrapEl) return;
-      let planRoot = wrapEl.querySelector("#mv-plan");
-      if (!planRoot) {
-        planRoot = document.createElement("div");
-        planRoot.id = "mv-plan";
-        wrapEl.appendChild(planRoot);
-      }
-
 
     days.forEach(day => {
       const stops = itinerary.filter(i => i.day === day);
@@ -210,6 +199,21 @@ function showSkeleton(show) {
     });
 
     html += `<div id="mv-map" style="width:100%;height:520px;border:1px solid #e5e7eb;border-radius:12px;margin:16px 0;"></div>`;
+
+    const cityTips = filterAllowed(recommendations?.city_tips || {});
+    if (hasAnyAllowed(cityTips)) {
+      html += `<div style="padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#fafafa;margin:8px 0 16px">
+        <div style="font-weight:700;margin-bottom:8px">City tips</div>`;
+      // --- replace the broken city-tips rendering inside renderItinerary ---
+      Object.keys(cityTips).forEach(k => {
+        html += `<div style="margin:6px 0">
+          <div style="font-weight:600">${TIP_LABELS[k] || k}</div>
+          <ul style="margin:6px 0 0 18px">${cityTips[k].map(t => `<li>${t}</li>`).join("")}</ul>
+        </div>`;
+      });
+
+      html += `</div>`;
+    }
 
     html += `
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px">
@@ -281,13 +285,14 @@ function renderItineraryWithDayTips(items, dayTipsObj, rootEl) {
 // --- corrected appendCityTipsSection ---
 function appendCityTipsSection(cityTips) {
   const wrapEl = document.getElementById("itinerary");
-if (!wrapEl) return;
-let rootEl = wrapEl.querySelector("#mv-city-tips");
-if (!rootEl) {
-  rootEl = document.createElement("div");
-  rootEl.id = "mv-city-tips";
-  wrapEl.appendChild(rootEl);
-}
+   if (!wrapEl) return;
+   let rootEl = wrapEl.querySelector("#mv-plan");
+   if (!rootEl) {
+     rootEl = document.createElement("div");
+     rootEl.id = "mv-plan";
+     wrapEl.appendChild(rootEl);
+   }
+
 
   const blocks = Object.entries(cityTips || {}).reduce((acc,[k,arr])=>{
     if (!Array.isArray(arr) || !arr.length) return acc;
@@ -317,11 +322,7 @@ function renderCityTipsIntoExistingContainer(rootEl, cityTips){
         <ul class="mv-tip-list" style="margin:6px 0 0 18px">${arr.map(t=>`<li>${t}</li>`).join("")}</ul>
       </div>`;
   }).join("");
-    rootEl.innerHTML = `
-    <div style="font-weight:700;margin:8px 0">City tips</div>
-    ${blocks || "<div style='color:#9ca3af'>No city tip categories selected.</div>"}
-  `;
-
+  rootEl.innerHTML = blocks || "<div style='color:#9ca3af'>No city tip categories selected.</div>";
 }
   
 
@@ -1053,27 +1054,10 @@ showSkeleton(true);
   })(form);
 
   // === UI start ===
-   statusEl.style.color = "#374151";
-   statusEl.textContent = "";
-   startProgress("Validating inputs…");
-   showSkeleton(true);
-   
-   // show results now so whichever request finishes first can render
-   form.style.display = "none";
-   itineraryEl.style.display = "block";
-   
-   // ensure dedicated roots so plan and tips never overwrite each other
-   (function ensureItinContainers(){
-     const wrap = itineraryEl || document.getElementById("itinerary");
-     if (!wrap) return;
-     if (!wrap.querySelector("#mv-plan")) {
-       const d = document.createElement("div"); d.id = "mv-plan"; wrap.appendChild(d);
-     }
-     if (!wrap.querySelector("#mv-city-tips")) {
-       const d = document.createElement("div"); d.id = "mv-city-tips"; wrap.appendChild(d);
-     }
-   })();
-
+  statusEl.style.color = "#374151";
+  statusEl.textContent = "";
+  startProgress("Validating inputs…");
+  showSkeleton(true);
 
   // preload heavy libs in parallel while network requests run
   const preloads = Promise.all([
@@ -1175,22 +1159,28 @@ const handleCity = async (cityTipsData) => {
 };
 
 
+
+// Paint the one that finishes first
 let planHandled = false;
 let cityHandled = false;
 
-// First to finish paints first
+// Paint whichever finishes first
 await Promise.race([
   pPlan.then(d => { planHandled = true; return handlePlan(d); }),
   pCityTips.then(d => { cityHandled = true; return handleCity(d); })
 ]);
 
 // Then paint whichever is still pending (only once)
-if (!planHandled) { await pPlan.then(handlePlan).catch(()=>{}); }
-if (!cityHandled) { await pCityTips.then(handleCity).catch(()=>{}); }
+if (!planHandled) {
+  await pPlan.then(handlePlan).catch(()=>{});
+}
+if (!cityHandled) {
+  await pCityTips.then(handleCity).catch(()=>{});
+}
+
 
 setProgress(96, "Final touches…");
 endProgress();
-
 statusEl.textContent = "";
 
 });
@@ -1202,5 +1192,7 @@ if (typeof window !== "undefined") {
   window.initCityRouteUI = initCityRouteUI;
 }
 
+  // expose init for the loader
+  window.initCityRouteUI = initCityRouteUI;
 
 })();

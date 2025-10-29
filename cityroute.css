@@ -54,3 +54,36 @@
   border-radius:12px;
   margin:16px 0;
 }
+
+/* === City tips grid (matches maps-bank card look) === */
+.mv-tips-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:28px;
+  margin:8px 0 16px;
+}
+@media (min-width:1024px){
+  .mv-tips-grid{ grid-template-columns:1fr 1fr; }
+}
+
+/* Card + typography reuse from maps-bank */
+.mv-tip-card{
+  border:2px solid #d0d7de;     /* same tone as maps-bank cards */
+  border-radius:16px;
+  padding:16px 18px;
+  background:#fff;
+}
+.mv-tip-title{
+  font-size:1.1em;
+  font-weight:700;
+  margin:0 0 8px 0;
+  color:#111;
+  font-family:"Playfair Display", serif; /* same heading feel */
+}
+.mv-tip-list{
+  list-style:disc;
+  margin:0;
+  padding-left:22px;
+}
+.mv-tip-list li{ margin:6px 0 8px; line-height:1.45; }
+

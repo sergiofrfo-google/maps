@@ -212,17 +212,19 @@ function showSkeleton(show) {
 
     const cityTips = filterAllowed(recommendations?.city_tips || {});
     if (hasAnyAllowed(cityTips)) {
-      html += `<div style="padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#fafafa;margin:8px 0 16px">
-        <div style="font-weight:700;margin-bottom:8px">City tips</div>`;
-      // --- replace the broken city-tips rendering inside renderItinerary ---
-      Object.keys(cityTips).forEach(k => {
-        html += `<div style="margin:6px 0">
-          <div style="font-weight:600">${TIP_LABELS[k] || k}</div>
-          <ul style="margin:6px 0 0 18px">${cityTips[k].map(t => `<li>${t}</li>`).join("")}</ul>
-        </div>`;
-      });
+   html += `<h2>City tips</h2><div class="mv-tips-grid">`;
+   Object.keys(cityTips).forEach(k => {
+     const label = TIP_LABELS[k] || k;
+     const items = (cityTips[k] || []).map(t => `<li>${t}</li>`).join("");
+     html += `
+       <section class="mv-tip-card">
+         <h3 class="mv-tip-title">${label}</h3>
+         <ul class="mv-tip-list">${items}</ul>
+       </section>
+     `;
+   });
+   html += `</div>`;
 
-      html += `</div>`;
     }
 
     html += `

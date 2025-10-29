@@ -306,7 +306,18 @@ function renderCityTipsIntoExistingContainer(rootEl, cityTips) {
     ${blocks || "<div style='color:#9ca3af'>No city tip categories selected.</div>"}
   `;
 }
-  
+function ensureCityTipsSectionAndRender(cityTips) {
+  let tipsRoot = document.getElementById("mv-city-tips");
+  if (!tipsRoot) {
+    tipsRoot = document.createElement("div");
+    tipsRoot.id = "mv-city-tips";
+    tipsRoot.className = "mv-city-tips-section";
+    document.querySelector("#mv-results")?.appendChild(tipsRoot);
+  }
+
+  renderCityTipsIntoExistingContainer(tipsRoot, cityTips);
+}
+
 
   // -------------------------------
   // 5. Map with filters (same)
@@ -1068,7 +1079,7 @@ showSkeleton(true);
     body: toFD({ ...payload, mode: "city_tips" })
   }).then(r => r.json());
    let planRendered = false;
-   let pendingCityTips = null;
+
    let cityTipsAppended = false;
 
   // === Process whichever arrives first, then append the other ===
@@ -1081,26 +1092,67 @@ const handlePlan = async (planData) => {
     statusEl.textContent = "❌ " + (planData?.error || "Plan error");
     return;
   }
+
   setProgress(42, "Rendering itinerary…");
-   // form was already hidden at submit; just hide the skeleton now
-   showSkeleton(false);
+  // skeleton is no longer needed once we can render something real
+  showSkeleton(false);
 
+  const itineraryItems = Array.isArray(planData.result?.itinerary)
+    ? planData.result.itinerary
+    : [];
 
-  const itineraryItems = Array.isArray(planData.result?.itinerary) ? planData.result.itinerary : [];
-  const dayTips = (planData.result && typeof planData.result.day_tips === "object") ? planData.result.day_tips : {};
+  const dayTips = (
+    planData.result &&
+    typeof planData.result.day_tips === "object"
+  )
+    ? planData.result.day_tips
+    : {};
 
-  // Use your ORIGINAL renderer so UI, buttons, and styles remain
-  const combined = { itinerary: itineraryItems, recommendations: { per_day: dayTips } };
+  // render the route + per-day tips
+  const combined = {
+    itinerary: itineraryItems,
+    recommendations: { per_day: dayTips }
+  };
   renderItinerary(combined, payload.city, payload.country);
 
-   setProgress(62, "Building map…");
-   try { await preloads; } catch(_){}
-   try { buildEmbeddedMap?.(itineraryItems, payload.city, payload.country); } catch(_){}
-   setProgress(78, "Map ready");
+  // map work
+  setProgress(62, "Building map…");
+  try { await preloads; } catch (_){}
+  try { buildEmbeddedMap?.(itineraryItems, payload.city, payload.country); } catch (_){}
+  setProgress(78, "Map ready");
 
-
+  // mark that the main plan view exists
   planRendered = true;
-if (pendingCityTips && !cityTipsAppended) {
+};
+
+
+
+const handleCity = async (cityTipsData) => {
+  if (!cityTipsData?.success) return;
+
+  const cityTips = (
+    cityTipsData.result &&
+    typeof cityTipsData.result.city_tips === "object"
+  )
+    ? cityTipsData.result.city_tips
+    : {};
+
+  // Don't render twice
+  if (cityTipsAppended) return;
+
+  // Progress bar feedback
+  if (!planRendered) {
+    // tips finished first
+    setProgress(42, "City tips ready…");
+  } else {
+    // plan already on screen, now we're enriching it
+    setProgress(88, "Adding city tips…");
+  }
+
+  // We are about to show real content, so the skeleton shouldn't block anymore
+  showSkeleton(false);
+
+  // Make sure the container exists
   let tipsRoot = document.getElementById("mv-city-tips");
   if (!tipsRoot) {
     tipsRoot = document.createElement("div");
@@ -1109,49 +1161,12 @@ if (pendingCityTips && !cityTipsAppended) {
     document.querySelector("#mv-results")?.appendChild(tipsRoot);
   }
 
-  renderCityTipsIntoExistingContainer(tipsRoot, pendingCityTips);
-
-  cityTipsAppended = true;
-  pendingCityTips = null;
-}
-
-};
-
-const handleCity = async (cityTipsData) => {
-  if (!cityTipsData?.success) return;
-
-  const cityTips = (cityTipsData.result && typeof cityTipsData.result.city_tips === "object")
-    ? cityTipsData.result.city_tips
-    : {};
-
-  // If plan UI not visible yet, buffer tips
-  if (!planRendered || (itineraryEl && itineraryEl.style.display === "none")) {
-    setProgress(42, "City tips ready…");
-    pendingCityTips = cityTips;
-    return;
-  }
-
-  // Append only once
-  if (cityTipsAppended) return;
-  setProgress(88, "Adding city tips…");
-  let tipsRoot = document.getElementById("mv-city-tips");
-   
-   // Safety: create the container if it doesn't exist yet
-   if (!tipsRoot) {
-     tipsRoot = document.createElement("div");
-     tipsRoot.id = "mv-city-tips";
-     tipsRoot.className = "mv-city-tips-section";
-   
-     // Append it wherever you show results (adjust this selector if yours is different)
-     document.querySelector("#mv-results")?.appendChild(tipsRoot);
-   }
-   
-   // Now render/update the tips section (with the header included in this fn)
-   renderCityTipsIntoExistingContainer(tipsRoot, cityTipsData);
-
+  // Render tips RIGHT NOW (not later)
+  renderCityTipsIntoExistingContainer(tipsRoot, cityTips);
 
   cityTipsAppended = true;
 };
+
 
 
 

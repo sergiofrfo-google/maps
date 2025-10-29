@@ -282,27 +282,7 @@ function renderItineraryWithDayTips(items, dayTipsObj, rootEl) {
   rootEl.innerHTML = parts.join("");
 }
 
-// --- corrected appendCityTipsSection ---
 
-
-  const blocks = Object.entries(cityTips || {}).reduce((acc,[k,arr])=>{
-    if (!Array.isArray(arr) || !arr.length) return acc;
-    acc.push(
-      `<div style="margin:10px 0">
-        <div style="font-weight:600;text-transform:capitalize">${k.replaceAll("_"," ")}</div>
-        <ul style="margin:6px 0 0 18px">${arr.map(t=>`<li>${t}</li>`).join("")}</ul>
-      </div>`
-    );
-    return acc;
-  }, []).join("");
-
-  const section = document.createElement("div");
-  section.innerHTML =
-    `<hr style="border:none;height:1px;background:#e5e7eb;margin:16px 0">
-     <h3 style="font-weight:700;margin:0 0 8px">City tips</h3>
-     ${blocks || "<div style='color:#9ca3af'>No city tip categories selected.</div>"}`;
-  rootEl.appendChild(section);
-}
 function renderCityTipsIntoExistingContainer(rootEl, cityTips) {
   const label = k =>
     (typeof TIP_LABELS === "object" && TIP_LABELS[k])

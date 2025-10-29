@@ -283,15 +283,6 @@ function renderItineraryWithDayTips(items, dayTipsObj, rootEl) {
 }
 
 // --- corrected appendCityTipsSection ---
-function appendCityTipsSection(cityTips) {
-  const wrapEl = document.getElementById("itinerary");
-   if (!wrapEl) return;
-   let rootEl = wrapEl.querySelector("#mv-plan");
-   if (!rootEl) {
-     rootEl = document.createElement("div");
-     rootEl.id = "mv-plan";
-     wrapEl.appendChild(rootEl);
-   }
 
 
   const blocks = Object.entries(cityTips || {}).reduce((acc,[k,arr])=>{
@@ -312,7 +303,7 @@ function appendCityTipsSection(cityTips) {
      ${blocks || "<div style='color:#9ca3af'>No city tip categories selected.</div>"}`;
   rootEl.appendChild(section);
 }
-function renderCityTipsIntoExistingContainer(rootEl, cityTips){
+function renderCityTipsIntoExistingContainer(rootEl, cityTips) {
   const label = k =>
     (typeof TIP_LABELS === "object" && TIP_LABELS[k])
       ? TIP_LABELS[k]
@@ -335,7 +326,6 @@ function renderCityTipsIntoExistingContainer(rootEl, cityTips){
     ${blocks || "<div style='color:#9ca3af'>No city tip categories selected.</div>"}
   `;
 }
-
   
 
   // -------------------------------
@@ -1131,16 +1121,19 @@ const handlePlan = async (planData) => {
 
   planRendered = true;
 if (pendingCityTips && !cityTipsAppended) {
-  const tipsRoot = document.getElementById("mv-city-tips");
-  if (tipsRoot) {
-    renderCityTipsIntoExistingContainer(tipsRoot, pendingCityTips);
-  } else if (typeof appendCityTipsSection === "function") {
-    appendCityTipsSection(pendingCityTips);
+  let tipsRoot = document.getElementById("mv-city-tips");
+  if (!tipsRoot) {
+    tipsRoot = document.createElement("div");
+    tipsRoot.id = "mv-city-tips";
+    tipsRoot.className = "mv-city-tips-section";
+    document.querySelector("#mv-results")?.appendChild(tipsRoot);
   }
+
+  renderCityTipsIntoExistingContainer(tipsRoot, pendingCityTips);
+
   cityTipsAppended = true;
   pendingCityTips = null;
 }
-
 
 };
 
@@ -1161,8 +1154,21 @@ const handleCity = async (cityTipsData) => {
   // Append only once
   if (cityTipsAppended) return;
   setProgress(88, "Adding city tips…");
-  const tipsRoot = document.getElementById("mv-city-tips");
-   renderCityTipsIntoExistingContainer(tipsRoot, cityTips);
+  let tipsRoot = document.getElementById("mv-city-tips");
+   
+   // Safety: create the container if it doesn't exist yet
+   if (!tipsRoot) {
+     tipsRoot = document.createElement("div");
+     tipsRoot.id = "mv-city-tips";
+     tipsRoot.className = "mv-city-tips-section";
+   
+     // Append it wherever you show results (adjust this selector if yours is different)
+     document.querySelector("#mv-results")?.appendChild(tipsRoot);
+   }
+   
+   // Now render/update the tips section (with the header included in this fn)
+   renderCityTipsIntoExistingContainer(tipsRoot, cityTipsData);
+
 
   cityTipsAppended = true;
 };

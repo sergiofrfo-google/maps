@@ -4,7 +4,7 @@
 */
 
 (() => {
-  "use strict";
+  'use strict';
 
   // -------------------------------
   // 0. Countries & Cities loader
@@ -1203,7 +1203,5 @@ if (typeof window !== "undefined") {
   window.initCityRouteUI = initCityRouteUI;
 }
 
-  // expose init for the loader
-  window.initCityRouteUI = initCityRouteUI;
 
 })();

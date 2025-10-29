@@ -136,8 +136,7 @@ function showSkeleton(show) {
     const days = [...new Set(itinerary.map(i => i.day))].sort((a,b)=>a-b);
 
     const filterAllowed = (obj) => {
-      if (!obj) return {};
-      if (ALLOWED.size === 0) return obj;   // ← include all tips when nothing selected
+      if (!obj || ALLOWED.size === 0) return {};
       const out = {};
       TIP_ORDER.forEach(k=>{
       if (!ALLOWED.has(k)) return;
@@ -145,6 +144,7 @@ function showSkeleton(show) {
       if (arr.length) out[k] = arr;
       });
       return out;
+
 
     };
     const hasAnyAllowed = (obj) =>
@@ -606,8 +606,7 @@ function downloadKML(itinerary, city, country) {
     const ALLOWED = new Set(selectedFocus);
 
     const allowFilter = (obj) => {
-      if (!obj) return {};
-      if (ALLOWED.size === 0) return obj;   // ← include all tips when nothing selected
+      if (!obj || ALLOWED.size === 0) return {};
       const out = {};
       TIP_ORDER.forEach(k=>{
       if (!ALLOWED.has(k)) return;
@@ -615,6 +614,7 @@ function downloadKML(itinerary, city, country) {
       if (arr.length) out[k] = arr;
       });
       return out;
+
 
     };
     const hasAnyAllowed = (obj) => !!obj && Object.keys(obj).some(k => Array.isArray(obj[k]) && obj[k].length);
@@ -707,7 +707,7 @@ function downloadKML(itinerary, city, country) {
       y += 10;
     });
 
-    const cityTips = allowFilter(recommendations?.city_tips || {});
+    const cityTips = allowFilter((recommendations?.city_tips || (typeof window !== "undefined" ? window.__mvCityTips : null) || {}));
     if (hasAnyAllowed(cityTips)) {
       if (y > pageH - margin - 40) { doc.addPage(); y = margin; }
       doc.setDrawColor(230); doc.line(margin, y, pageW - margin, y); y += 12;
@@ -934,6 +934,10 @@ function mvClearPreviousOutput() {
   const results = document.getElementById("mv-results");
   if (results) results.innerHTML = "";
 
+  // NEW: clear the dedicated plan container so previous itinerary disappears immediately
+  const planRoot = document.getElementById("mv-plan");
+  if (planRoot) planRoot.innerHTML = "";
+
   // tips (the helper renders into this container)
   const tips = document.getElementById("mv-city-tips");
   if (tips) tips.innerHTML = "";
@@ -947,6 +951,7 @@ function mvClearPreviousOutput() {
     if (map) map.innerHTML = "";
   }
 }
+
 
 
   // -------------------------------
@@ -1203,10 +1208,15 @@ const handleCity = async (cityTipsData) => {
     document.querySelector("#mv-results")?.appendChild(tipsRoot);
   }
 
-  // Render tips RIGHT NOW (not later)
-  renderCityTipsIntoExistingContainer(tipsRoot, cityTips);
 
-  cityTipsAppended = true;
+  // Render tips RIGHT NOW (not later)
+   renderCityTipsIntoExistingContainer(tipsRoot, cityTips);
+   
+   // make tips available to exports even if buttons were bound earlier
+   window.__mvCityTips = cityTips;
+   
+   cityTipsAppended = true;
+
 };
 
 

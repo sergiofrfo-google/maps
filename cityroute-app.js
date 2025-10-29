@@ -313,17 +313,29 @@ function appendCityTipsSection(cityTips) {
   rootEl.appendChild(section);
 }
 function renderCityTipsIntoExistingContainer(rootEl, cityTips){
-  const label = k => (typeof TIP_LABELS === "object" && TIP_LABELS[k]) ? TIP_LABELS[k] : k.replaceAll("_"," ");
-  const blocks = Object.entries(cityTips || {}).map(([k,arr])=>{
+  const label = k =>
+    (typeof TIP_LABELS === "object" && TIP_LABELS[k])
+      ? TIP_LABELS[k]
+      : k.replaceAll("_"," ");
+
+  const blocks = Object.entries(cityTips || {}).map(([k, arr]) => {
     if (!Array.isArray(arr) || !arr.length) return "";
     return `
       <div class="mv-tip-block" style="margin:10px 0">
         <div class="mv-tip-title" style="font-weight:600">${label(k)}</div>
-        <ul class="mv-tip-list" style="margin:6px 0 0 18px">${arr.map(t=>`<li>${t}</li>`).join("")}</ul>
+        <ul class="mv-tip-list" style="margin:6px 0 0 18px">
+          ${arr.map(t => `<li>${t}</li>`).join("")}
+        </ul>
       </div>`;
   }).join("");
-  rootEl.innerHTML = blocks || "<div style='color:#9ca3af'>No city tip categories selected.</div>";
+
+  rootEl.innerHTML = `
+    <hr style="border:none;height:1px;background:#e5e7eb;margin:16px 0">
+    <h3 style="font-weight:700;margin:0 0 8px">City tips</h3>
+    ${blocks || "<div style='color:#9ca3af'>No city tip categories selected.</div>"}
+  `;
 }
+
   
 
   // -------------------------------

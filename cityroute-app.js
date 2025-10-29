@@ -136,14 +136,16 @@ function showSkeleton(show) {
     const days = [...new Set(itinerary.map(i => i.day))].sort((a,b)=>a-b);
 
     const filterAllowed = (obj) => {
-      if (!obj || ALLOWED.size === 0) return {};
+      if (!obj) return {};
+      if (ALLOWED.size === 0) return obj;   // ← include all tips when nothing selected
       const out = {};
       TIP_ORDER.forEach(k=>{
-        if (!ALLOWED.has(k)) return;
-        const arr = Array.isArray(obj[k]) ? obj[k].filter(Boolean) : [];
-        if (arr.length) out[k] = arr;
+      if (!ALLOWED.has(k)) return;
+      const arr = Array.isArray(obj[k]) ? obj[k].filter(Boolean) : [];
+      if (arr.length) out[k] = arr;
       });
       return out;
+
     };
     const hasAnyAllowed = (obj) =>
       !!obj && Object.keys(obj).some(k => Array.isArray(obj[k]) && obj[k].length);
@@ -604,14 +606,16 @@ function downloadKML(itinerary, city, country) {
     const ALLOWED = new Set(selectedFocus);
 
     const allowFilter = (obj) => {
-      if (!obj || ALLOWED.size===0) return {};
+      if (!obj) return {};
+      if (ALLOWED.size === 0) return obj;   // ← include all tips when nothing selected
       const out = {};
       TIP_ORDER.forEach(k=>{
-        if (!ALLOWED.has(k)) return;
-        const arr = Array.isArray(obj[k]) ? obj[k].filter(Boolean) : [];
-        if (arr.length) out[k] = arr;
+      if (!ALLOWED.has(k)) return;
+      const arr = Array.isArray(obj[k]) ? obj[k].filter(Boolean) : [];
+      if (arr.length) out[k] = arr;
       });
       return out;
+
     };
     const hasAnyAllowed = (obj) => !!obj && Object.keys(obj).some(k => Array.isArray(obj[k]) && obj[k].length);
 

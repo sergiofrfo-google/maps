@@ -198,10 +198,13 @@ function showSkeleton(show) {
        const directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypoints ? "&waypoints=" + waypoints : ""}`;
        extras += `<p class="mv-day-dir"><a href="${directionsUrl}" target="_blank">🗺️ Full directions for Day ${day}</a></p>`;
      }
-     const dailyTip = recommendations?.per_day?.[`day_${day}`];
-     if (dailyTip && String(dailyTip).trim()) {
-       extras += `<div class="mv-day-tip"><strong>Tip for Day ${day}:</strong> ${dailyTip}</div>`;
-     }
+      
+      const _perDay = (recommendations?.per_day || recommendations?.day_tips || {});
+      const dailyTip = _perDay[`day_${day}`] ?? _perDay[String(day)] ?? _perDay[day] ?? "";
+      if (dailyTip && String(dailyTip).trim()) {
+        extras += `<div class="mv-day-tip"><strong>Tip for Day ${day}:</strong> ${dailyTip}</div>`;
+      }
+
    
      // the card
      html += `
@@ -703,12 +706,15 @@ function downloadKML(itinerary, city, country) {
       }
 
       // Keep your current two-line style (title line + paragraph)
-      const dailyTip = recommendations?.per_day?.[`day_${day}`];
+   
+      const _perDay = (recommendations?.per_day || recommendations?.day_tips || {});
+      const dailyTip = _perDay[`day_${day}`] ?? _perDay[String(day)] ?? _perDay[day] ?? "";
       if (dailyTip && String(dailyTip).trim()) {
         y += 6;
         writeWrappedText(`Tip for Day ${day}`, { bold:true });
         writeWrappedText(dailyTip, { indent:14, gray:true });
       }
+
 
       y += 10;
     });
@@ -782,8 +788,10 @@ async function shareItinerary(itinerary, city, country, recommendations = {}) {
       const dUrl=`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypoints? "&waypoints="+waypoints:""}`;
       text += `Directions (Day ${day}): ${dUrl}\n`;
     }
-    const dailyTip = recommendations?.per_day?.[`day_${day}`];
-    if (dailyTip && String(dailyTip).trim()) text += `Tip for Day ${day}: ${dailyTip}\n`;
+   const _perDay = (recommendations?.per_day || recommendations?.day_tips || {});
+   const dailyTip = _perDay[`day_${day}`] ?? _perDay[String(day)] ?? _perDay[day] ?? "";
+   if (dailyTip && String(dailyTip).trim()) text += `Tip for Day ${day}: ${dailyTip}\n`;
+
     text += `\n`;
   });
 
@@ -813,8 +821,9 @@ async function shareItinerary(itinerary, city, country, recommendations = {}) {
       const dUrl=`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypoints? "&waypoints="+waypoints:""}`;
       html += `<li><a href="${dUrl}"><em>Directions (Day ${day})</em></a></li>`;
     }
-    const dailyTip = recommendations?.per_day?.[`day_${day}`];
-    if (dailyTip && String(dailyTip).trim()) html += `<li><strong>Tip for Day ${day}:</strong> ${esc(dailyTip)}</li>`;
+   const _perDay = (recommendations?.per_day || recommendations?.day_tips || {});
+   const dailyTip = _perDay[`day_${day}`] ?? _perDay[String(day)] ?? _perDay[day] ?? "";
+   if (dailyTip && String(dailyTip).trim()) html += `<li><strong>Tip for Day ${day}:</strong> ${esc(dailyTip)}</li>`;
     html += `</ul>`;
   });
 

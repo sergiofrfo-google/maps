@@ -164,7 +164,11 @@ function showSkeleton(show) {
 
 // wrap all days in a responsive 2-column grid
    html += `<div class="mv-days-grid">`;
-   
+
+     
+   window.__mvItinerary = itinerary;
+   window.__mvDayTips   = recommendations?.per_day || recommendations?.day_tips || {};
+     
    days.forEach(day => {
      const stops = itinerary.filter(i => i.day === day);
    
@@ -861,6 +865,10 @@ window.shareItinerary = shareItinerary;
 
 // NEW: make this a function so it's not executed at top-level
 // wrap in a function so 'root' exists and nothing executes at top level
+// --- Config (lives in GitHub) ---
+const EMAIL_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbxny50qVDVtA-ZWXor9oX2trVH-IeR6UiEWFAPaPHm7jBbiyset9gQdF4FG7tSx7aj6/exec";
+
+   
 function wireDateControls(root = document){
   const pick = (id, name) => document.getElementById(id) || root.querySelector(`[name="${name}"]`);
 
@@ -952,6 +960,47 @@ function mvClearPreviousOutput() {
   }
 }
 
+function mvBuildEmailPayload() {
+  // Gather the most recent data already in your UI/state
+  const city     = document.querySelector('#mv-form input[name="city"]')?.value?.trim() || "";
+  const country  = document.querySelector('#mv-form input[name="country"]')?.value?.trim() || "";
+  const to       = document.querySelector('#mv-form input[name="email"]')?.value?.trim() || "";
+  const itinerary = Array.isArray(window.__mvItinerary) ? window.__mvItinerary : [];
+  const day_tips  = window.__mvDayTips || {};
+  const city_tips = window.__mvCityTips || {};
+  const tip_focus = (typeof ALLOWED !== "undefined" && ALLOWED && typeof ALLOWED.forEach === "function")
+    ? Array.from(ALLOWED)
+    : [];
+
+  return { to, city, country, itinerary, day_tips, city_tips, tip_focus };
+}
+
+function mvEmailSendFireAndForget(payload) {
+  try {
+      const url = ((typeof window !== "undefined" && typeof window.CITYROUTE_EMAIL_URL === "string" && window.CITYROUTE_EMAIL_URL)
+        ? window.CITYROUTE_EMAIL_URL
+        : EMAIL_URL_DEFAULT);
+
+
+    if (!url || !payload || !payload.to) return;
+
+    // Prefer navigator.sendBeacon (never blocks UI)
+    const json = JSON.stringify(payload);
+    if (navigator.sendBeacon) {
+      const blob = new Blob([json], { type: "application/json" });
+      navigator.sendBeacon(url, blob);
+      return;
+    }
+
+    // Fallback: fire-and-forget fetch (no await), keepalive so it survives page nav
+    fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: json,
+      keepalive: true
+    }).catch(()=>{});
+  } catch (_) {}
+}
 
 
   // -------------------------------
@@ -1214,6 +1263,13 @@ const handleCity = async (cityTipsData) => {
    
    // make tips available to exports even if buttons were bound earlier
    window.__mvCityTips = cityTips;
+   (function(){
+  const to = document.querySelector('#mv-form input[name="email"]')?.value?.trim() || "";
+  if (!to) return;                     // only send if user provided email
+  const payload = mvBuildEmailPayload();
+  mvEmailSendFireAndForget(payload);   // fire & forget (won’t block UI)
+})();
+
    
    cityTipsAppended = true;
 

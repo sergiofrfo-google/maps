@@ -977,28 +977,28 @@ function mvBuildEmailPayload() {
 
 function mvEmailSendFireAndForget(payload) {
   try {
-      const url = ((typeof window !== "undefined" && typeof window.CITYROUTE_EMAIL_URL === "string" && window.CITYROUTE_EMAIL_URL)
-        ? window.CITYROUTE_EMAIL_URL
-        : EMAIL_URL_DEFAULT);
-
+    const url = (typeof window !== "undefined" && typeof window.CITYROUTE_EMAIL_URL === "string" && window.CITYROUTE_EMAIL_URL)
+      ? window.CITYROUTE_EMAIL_URL
+      : (typeof EMAIL_URL_DEFAULT === "string" ? EMAIL_URL_DEFAULT : "");
 
     if (!url || !payload || !payload.to) return;
 
-    // Prefer navigator.sendBeacon (never blocks UI)
     const json = JSON.stringify(payload);
+
+    // Use Beacon first: text/plain avoids preflight and is non-blocking
     if (navigator.sendBeacon) {
-      const blob = new Blob([json], { type: "application/json" });
+      const blob = new Blob([json], { type: "text/plain;charset=UTF-8" });
       navigator.sendBeacon(url, blob);
       return;
     }
 
-    // Fallback: fire-and-forget fetch (no await), keepalive so it survives page nav
+    // Fallback: simple POST without custom headers; no-cors prevents preflight
     fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: json,
-      keepalive: true
-    }).catch(()=>{});
+      mode: "no-cors",
+      keepalive: true,
+      body: json // text/plain by default (no headers) -> simple request
+    }).catch(() => {});
   } catch (_) {}
 }
 

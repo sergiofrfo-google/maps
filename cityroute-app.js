@@ -166,8 +166,9 @@ function showSkeleton(show) {
    html += `<div class="mv-days-grid">`;
 
      
-   window.__mvItinerary = itinerary;
-   window.__mvDayTips   = recommendations?.per_day || recommendations?.day_tips || {};
+   window.__mvItinerary = Array.isArray(itinerary) ? itinerary : [];
+   window.__mvDayTips   = (recommendations?.per_day || recommendations?.day_tips || {});
+
      
    days.forEach(day => {
      const stops = itinerary.filter(i => i.day === day);

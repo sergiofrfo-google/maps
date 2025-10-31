@@ -168,6 +168,7 @@ function showSkeleton(show) {
      
    window.__mvItinerary = Array.isArray(itinerary) ? itinerary : [];
    window.__mvDayTips   = (recommendations?.per_day || recommendations?.day_tips || {});
+   trySendEmailIfReady();
 
      
    days.forEach(day => {
@@ -939,6 +940,11 @@ function wireDateControls(root = document){
 }
    
 function mvClearPreviousOutput() {
+   // reset email gating + last payload
+  window.__mvEmailSent = false;
+  window.__mvItinerary = [];
+  window.__mvDayTips = {};
+  window.__mvCityTips = {};
   // results (days + buttons live here)
   const results = document.getElementById("mv-results");
   if (results) results.innerHTML = "";
@@ -1000,6 +1006,34 @@ function mvEmailSendFireAndForget(payload) {
       keepalive: true,
       body: json // text/plain by default (no headers) -> simple request
     }).catch(() => {});
+  } catch (_) {}
+}
+
+   function trySendEmailIfReady() {
+  try {
+    // already sent in this session?
+    if (window.__mvEmailSent) return;
+
+    // user didn’t provide an email? do nothing
+    const to = document.querySelector('#mv-form input[name="email"]')?.value?.trim() || "";
+    if (!to) return;
+
+    // itinerary must exist
+    const itin = Array.isArray(window.__mvItinerary) ? window.__mvItinerary : [];
+    if (!itin.length) return;
+
+    // if the user selected any city-tip categories, wait until tips are present too
+    const selectedFocus = Array.from(document.querySelectorAll('input[name="tip_focus"]:checked')).map(i=>i.value);
+    const requireTips = selectedFocus.length > 0;
+    const tips = window.__mvCityTips || {};
+    const tipsReady = !requireTips || Object.keys(tips).some(k => Array.isArray(tips[k]) && tips[k].length);
+
+    if (!tipsReady) return;
+
+    // build + fire (non-blocking)
+    const payload = mvBuildEmailPayload();
+    mvEmailSendFireAndForget(payload);
+    window.__mvEmailSent = true;
   } catch (_) {}
 }
 
@@ -1261,15 +1295,9 @@ const handleCity = async (cityTipsData) => {
 
   // Render tips RIGHT NOW (not later)
    renderCityTipsIntoExistingContainer(tipsRoot, cityTips);
-   
-   // make tips available to exports even if buttons were bound earlier
    window.__mvCityTips = cityTips;
-   (function(){
-  const to = document.querySelector('#mv-form input[name="email"]')?.value?.trim() || "";
-  if (!to) return;                     // only send if user provided email
-  const payload = mvBuildEmailPayload();
-  mvEmailSendFireAndForget(payload);   // fire & forget (won’t block UI)
-})();
+   trySendEmailIfReady();
+
 
    
    cityTipsAppended = true;

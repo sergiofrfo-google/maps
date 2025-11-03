@@ -1274,17 +1274,18 @@ showSkeleton(true);
   // === Fire BOTH requests (as you required):
   // 1) plan -> itinerary + day_tips (they are related, same response)
   // 2) city_tips -> city-level tips only
-  setProgress(18, "Sending requests…");
 
-  const pPlan = fetch(APPS_SCRIPT_URL, {
-    method: "POST",
-    body: toFD({ ...payload, mode: "plan" })
-  }).then(r => r.json());
+setProgress(18, "Sending requests…");
+const pPlan = fetch(APPS_SCRIPT_URL, {
+  method: "POST",
+  body: toFD({ ...payload, mode: "plan" })
+}).then(function (res) { return res.json(); });
 
-  const pCityTips = fetch(APPS_SCRIPT_URL, {
-    method: "POST",
-    body: toFD({ ...payload, mode: "city_tips" })
-  }).then(r => r.json());
+const pCityTips = fetch(APPS_SCRIPT_URL, {
+  method: "POST",
+  body: toFD({ ...payload, mode: "city_tips" })
+}).then(function (res) { return res.json(); });
+
    let planRendered = false;
 
    let cityTipsAppended = false;

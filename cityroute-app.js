@@ -987,9 +987,11 @@ function mvRestoreByIds() {
   const qs = new URLSearchParams(location.search);
   const planId = qs.get("plan_id");
   const tipsId = qs.get("tips_id") || "";
-  if (!planId) return;
+ // run ONLY if a non-empty planId is present
+  if (!planId || !planId.trim()) return;
 
-  // never auto-email on restore
+  // prevent accidental re-restore on reloads/back/forward
+  history.replaceState(null, "", location.pathname + location.hash);
   window.__mvRestoring = true;
 
   // clear previous UI before painting restored data
@@ -1063,29 +1065,21 @@ function mvBuildEmailPayload() {
 
 function mvEmailSendFireAndForget(payload) {
   try {
-    const url = (typeof window !== "undefined" && typeof window.CITYROUTE_EMAIL_URL === "string" && window.CITYROUTE_EMAIL_URL)
-      ? window.CITYROUTE_EMAIL_URL
-      : (typeof EMAIL_URL_DEFAULT === "string" ? EMAIL_URL_DEFAULT : "");
-
-    if (!url || !payload || !payload.to) return;
-
-    const json = JSON.stringify(payload);
-
-    // Use Beacon first: text/plain avoids preflight and is non-blocking
     if (navigator.sendBeacon) {
-      const blob = new Blob([json], { type: "text/plain;charset=UTF-8" });
-      navigator.sendBeacon(url, blob);
+      const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
+      navigator.sendBeacon(window.CITYROUTE_EMAIL_URL, blob);
       return;
     }
-
-    // Fallback: simple POST without custom headers; no-cors prevents preflight
-    fetch(url, {
+    // fallback: no-cors and DO NOT await or read the response
+    fetch(window.CITYROUTE_EMAIL_URL, {
       method: "POST",
       mode: "no-cors",
-      keepalive: true,
-      body: json // text/plain by default (no headers) -> simple request
-    }).catch(() => {});
-  } catch (_) {}
+      headers: { "Content-Type": "text/plain;charset=UTF-8" }, // simple request, no preflight
+      body: JSON.stringify(payload)
+    });
+  } catch (_) {
+    // swallow: emailing must never block the UI
+  }
 }
 
    function trySendEmailIfReady() {

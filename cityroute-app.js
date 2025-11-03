@@ -1392,17 +1392,20 @@ let cityHandled = false;
 
 // Paint whichever finishes first
 await Promise.race([
-  pPlan.then(d => { planHandled = true; return handlePlan(d); }),
-  pCityTips.then(d => { cityHandled = true; return handleCity(d); })
+  pPlan.then(function (data) { planHandled = true; return handlePlan(data); }),
+  pCityTips.then(function (data) { cityHandled = true; return handleCity(data); })
 ]);
 
 // Then paint whichever is still pending (only once)
 if (!planHandled) {
-  await pPlan.then(handlePlan).catch(()=>{});
+  await pPlan.then(function (data) { return handlePlan(data); })
+             .catch(function (err) { /* optional: console.warn(err); */ });
 }
 if (!cityHandled) {
-  await pCityTips.then(handleCity).catch(()=>{});
+  await pCityTips.then(function (data) { return handleCity(data); })
+                 .catch(function (err) { /* optional: console.warn(err); */ });
 }
+
 
 
 setProgress(96, "Final touches…");

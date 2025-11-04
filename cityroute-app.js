@@ -13,8 +13,6 @@
   const CITIES_API_URL = "https://script.google.com/macros/s/AKfycbwGocu75weAKjVd-i-dUG9ecGJQfkRrGlssl6D8FQ18iwcjKOscPmbxdNTXdPtqDOUODw/exec";
   // Static JSON with all countries (hosted on GitHub Pages)
   const COUNTRIES_URL = "https://apps.mapvivid.com/countries.json";
-  const RESTORE_URL = "https://script.google.com/macros/s/AKfycbxoIr6q62aC_vKC1IyHZ1qogcJVxQgBD4QZSxFNq6_9nTwjxWBE1cOtJ3U_q-QWP4Haog/exec";
-
 
   async function loadCountries() {
     try {
@@ -250,12 +248,6 @@ function showSkeleton(show) {
         <button id="backBtn" style="margin-left:auto;">🔄 Generate another route</button>
       </div>`;
 
-     // Prepend a Restore link if we have an id
-      if (window.__mvPlanID) {
-        const _restore = `${location.origin}/ai-itinerary/?plan_id=${encodeURIComponent(window.__mvPlanID)}${window.__mvTipsID ? `&tips_id=${encodeURIComponent(window.__mvTipsID)}` : ""}`;
-        html = `<div id="mv-restore-bar" style="margin:8px 0 16px 0"><a class="mv-btn" href="${_restore}">Restore this itinerary</a></div>` + html;
-      }
-     
     planRoot.innerHTML = html;
 
     // form/status come from init; store them on window so this function can access
@@ -984,59 +976,6 @@ function mvClearPreviousOutput() {
   }
 }
 
-// ---- Restore by response id (uses your restore GAS; no model call) ----
-function mvRestoreByIds() {
-  const qs = new URLSearchParams(location.search);
-  const planId = qs.get("plan_id");
-  const tipsId = qs.get("tips_id") || "";
- // run ONLY if a non-empty planId is present
-  if (!planId || !planId.trim()) return;
-
-  // prevent accidental re-restore on reloads/back/forward
-  history.replaceState(null, "", location.pathname + location.hash);
-  window.__mvRestoring = true;
-
-  // clear previous UI before painting restored data
-  if (typeof mvClearPreviousOutput === "function") mvClearPreviousOutput();
-
-  // you’ll set this in PageLayer (like CITYROUTE_ASSET_BASE): window.CITYROUTE_RESTORE_URL
-  const RESTORE_URL = window.CITYROUTE_RESTORE_URL || "";
-  if (!RESTORE_URL) {
-    console.error("Missing CITYROUTE_RESTORE_URL");
-    return;
-  }
-
-  const url = RESTORE_URL
-    + `?plan_id=${encodeURIComponent(planId)}`
-    + (tipsId ? `&tips_id=${encodeURIComponent(tipsId)}` : "");
-
-  fetch(url, { cache: "no-store" })
-    .then(r => r.json())
-    .then(payload => {
-      if (!payload || !payload.success) throw new Error("Restore failed");
-
-      const res       = payload.result || {};
-      const itinerary = Array.isArray(res.itinerary) ? res.itinerary : [];
-      const dayTips   = res.day_tips || {};
-      const cityTips  = res.city_tips || {};
-
-      const daysRoot = document.getElementById("mv-results");
-      if (daysRoot) renderItinerary(daysRoot, itinerary, { per_day: dayTips });
-
-      const tipsRoot = document.getElementById("mv-city-tips");
-      if (tipsRoot && Object.keys(cityTips).length) {
-        renderCityTipsIntoExistingContainer(tipsRoot, cityTips);
-        window.__mvCityTips = cityTips;
-      }
-
-      // keep ids for share/email buttons
-      window.__mvPlanID = planId;
-      window.__mvTipsID = tipsId;
-    })
-    .catch(err => console.error("Restore error:", err));
-}
-   
-   
 function mvBuildEmailPayload() {
   // Gather the most recent data already in your UI/state
   const city     = document.querySelector('#mv-form input[name="city"]')?.value?.trim() || "";
@@ -1049,43 +988,37 @@ function mvBuildEmailPayload() {
     ? Array.from(ALLOWED)
     : [];
 
-  const restore_link = (window.__mvPlanID
-  ? `${location.origin}/ai-itinerary/?plan_id=${encodeURIComponent(window.__mvPlanID)}${window.__mvTipsID ? `&tips_id=${encodeURIComponent(window.__mvTipsID)}` : ""}`
-  : "");
-   
-   return {
-     to,
-     subject,
-     itinerary: window.__mvItinerary || [],
-     day_tips: window.__mvDayTips || {},
-     city_tips: window.__mvCityTips || {},
-     tip_focus: selectedFocus,
-     restore_link      // ⬅️ new field
-   };
-
+  return { to, city, country, itinerary, day_tips, city_tips, tip_focus };
 }
 
 function mvEmailSendFireAndForget(payload) {
   try {
+    const url = (typeof window !== "undefined" && typeof window.CITYROUTE_EMAIL_URL === "string" && window.CITYROUTE_EMAIL_URL)
+      ? window.CITYROUTE_EMAIL_URL
+      : (typeof EMAIL_URL_DEFAULT === "string" ? EMAIL_URL_DEFAULT : "");
+
+    if (!url || !payload || !payload.to) return;
+
+    const json = JSON.stringify(payload);
+
+    // Use Beacon first: text/plain avoids preflight and is non-blocking
     if (navigator.sendBeacon) {
-      const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
-      navigator.sendBeacon(window.CITYROUTE_EMAIL_URL, blob);
+      const blob = new Blob([json], { type: "text/plain;charset=UTF-8" });
+      navigator.sendBeacon(url, blob);
       return;
     }
-    // fallback: no-cors and DO NOT await or read the response
-    fetch(window.CITYROUTE_EMAIL_URL, {
+
+    // Fallback: simple POST without custom headers; no-cors prevents preflight
+    fetch(url, {
       method: "POST",
       mode: "no-cors",
-      headers: { "Content-Type": "text/plain;charset=UTF-8" }, // simple request, no preflight
-      body: JSON.stringify(payload)
-    });
-  } catch (_) {
-    // swallow: emailing must never block the UI
-  }
+      keepalive: true,
+      body: json // text/plain by default (no headers) -> simple request
+    }).catch(() => {});
+  } catch (_) {}
 }
 
    function trySendEmailIfReady() {
-      if (window.__mvRestoring) return;
   try {
     // already sent in this session?
     if (window.__mvEmailSent) return;
@@ -1274,18 +1207,17 @@ showSkeleton(true);
   // === Fire BOTH requests (as you required):
   // 1) plan -> itinerary + day_tips (they are related, same response)
   // 2) city_tips -> city-level tips only
+  setProgress(18, "Sending requests…");
 
-setProgress(18, "Sending requests…");
-const pPlan = fetch(APPS_SCRIPT_URL, {
-  method: "POST",
-  body: toFD({ ...payload, mode: "plan" })
-}).then(function (res) { return res.json(); });
+  const pPlan = fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    body: toFD({ ...payload, mode: "plan" })
+  }).then(r => r.json());
 
-const pCityTips = fetch(APPS_SCRIPT_URL, {
-  method: "POST",
-  body: toFD({ ...payload, mode: "city_tips" })
-}).then(function (res) { return res.json(); });
-
+  const pCityTips = fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    body: toFD({ ...payload, mode: "city_tips" })
+  }).then(r => r.json());
    let planRendered = false;
 
    let cityTipsAppended = false;
@@ -1308,7 +1240,6 @@ const handlePlan = async (planData) => {
   const itineraryItems = Array.isArray(planData.result?.itinerary)
     ? planData.result.itinerary
     : [];
-   window.__mvPlanID = r?.plan_id || "";   // capture the OpenAI response id from GAS (plan)
 
   const dayTips = (
     planData.result &&
@@ -1345,7 +1276,6 @@ const handleCity = async (cityTipsData) => {
   )
     ? cityTipsData.result.city_tips
     : {};
-   window.__mvTipsID = r?.tips_id || "";   // capture OpenAI response id for city_tips (optional)
 
   // Don't render twice
   if (cityTipsAppended) return;
@@ -1392,20 +1322,17 @@ let cityHandled = false;
 
 // Paint whichever finishes first
 await Promise.race([
-  pPlan.then(function (data) { planHandled = true; return handlePlan(data); }),
-  pCityTips.then(function (data) { cityHandled = true; return handleCity(data); })
+  pPlan.then(d => { planHandled = true; return handlePlan(d); }),
+  pCityTips.then(d => { cityHandled = true; return handleCity(d); })
 ]);
 
 // Then paint whichever is still pending (only once)
 if (!planHandled) {
-  await pPlan.then(function (data) { return handlePlan(data); })
-             .catch(function (err) { /* optional: console.warn(err); */ });
+  await pPlan.then(handlePlan).catch(()=>{});
 }
 if (!cityHandled) {
-  await pCityTips.then(function (data) { return handleCity(data); })
-                 .catch(function (err) { /* optional: console.warn(err); */ });
+  await pCityTips.then(handleCity).catch(()=>{});
 }
-
 
 
 setProgress(96, "Final touches…");
@@ -1414,7 +1341,6 @@ statusEl.textContent = "";
 
 });
 
-       mvRestoreByIds();
   }
    
 // expose for WP inline caller + console

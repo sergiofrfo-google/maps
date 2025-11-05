@@ -375,6 +375,73 @@ function renderCityTipsIntoExistingContainer(rootEl, cityTips) {
    `;
 
 }
+
+function applyRestoredResult(root, result) {
+  const itinerary = Array.isArray(result.itinerary) ? result.itinerary : [];
+  const dayTips   = (result.day_tips && typeof result.day_tips === "object") ? result.day_tips : {};
+  const cityTips  = (result.city_tips && typeof result.city_tips === "object") ? result.city_tips : {};
+
+  // cache the ids so your “Share page” button keeps working after restore
+  // (the caller sets these two before invoking this renderer)
+  const shareBtn = root.querySelector("#btnSharePage");
+  if (shareBtn) shareBtn.disabled = false;
+
+  // group by day
+  const byDay = {};
+  for (const s of itinerary) {
+    const d = Number(s && s.day) || 1;
+    (byDay[d] ||= []).push(s);
+  }
+
+  // build the same 2-column “card” markup you’re already using
+  const daysWrap = root.querySelector("#mv-days");
+  if (daysWrap) {
+    const dayHtml = Object.keys(byDay)
+      .map(n => Number(n))
+      .sort((a,b)=>a-b)
+      .map(d => {
+        const stops = byDay[d]
+          .map(s => {
+            const nm = String(s.name || "");
+            const tm = String(s.time || "");
+            const ds = String(s.description || "");
+            const q = encodeURIComponent(nm);
+            return `
+              <li style="margin:6px 0 8px">
+                <strong>${tm ? tm + " — " : ""}${nm}</strong>
+                <a href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" style="color:#2563eb">Map</a>
+                ${ds ? `<br><em>${ds}</em>` : ""}
+              </li>`;
+          })
+          .join("");
+
+        const tip = dayTips && dayTips[String(d)] ? String(dayTips[String(d)]) : "";
+
+        // card like your current style
+        return `
+          <section class="mv-card" style="border:1px solid #e5e7eb;border-radius:14px;padding:14px 16px;margin:10px 0;background:#fff">
+            <h2 style="margin:0 0 8px 0">Day ${d}</h2>
+            <ul style="margin:0;padding-left:18px">${stops}</ul>
+            ${tip ? `<div style="margin-top:8px;color:#374151"><strong>Tip for Day ${d}:</strong> ${tip}</div>` : ""}
+          </section>`;
+      })
+      .join("");
+
+    // keep your grid/two-column feel
+    daysWrap.innerHTML = `<div class="mv-day-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px">${dayHtml}</div>`;
+  }
+
+  // reuse your existing city-tips renderer (you already have this function)
+  const tipsWrap = root.querySelector("#mv-citytips");
+  if (tipsWrap && typeof renderCityTipsIntoExistingContainer === "function") {
+    renderCityTipsIntoExistingContainer(root, cityTips);
+  }
+
+  // finally show results area
+  const results = root.querySelector("#mv-results");
+  if (results) results.style.display = "";
+}
+
 function ensureCityTipsSectionAndRender(cityTips) {
   let tipsRoot = document.getElementById("mv-city-tips");
   if (!tipsRoot) {
@@ -1129,27 +1196,48 @@ function mvEmailSendFireAndForget(payload) {
   // -------------------------------
   function initCityRouteUI(root = document){
      // --- restore flow: only if URL contains plan_id (and optional tips_id) ---
-   const __qs = new URLSearchParams(location.search);
-   const __restorePlanId = __qs.get("plan_id");
-   const __restoreTipsId = __qs.get("tips_id");
+// --- Restore via ?plan_id=&tips_id= (run before normal init)
+   const __usp = new URLSearchParams(location.search);
+   if (__usp.get("plan_id")) {
+     (async () => {
+       const planId = __usp.get("plan_id");
+       const tipsId = __usp.get("tips_id") || "";
    
-   if (__restorePlanId) {
-     // hide the form area so we only show results
-     const formEl =
-       root.querySelector("#mv-form") || root.querySelector('[data-role="form"]');
-     if (formEl) formEl.style.display = "none";
+       const formWrap  = root.querySelector("#mv-form-wrap");
+       const resultsEl = root.querySelector("#mv-results");
+       if (formWrap) formWrap.style.display = "none";
+       if (resultsEl) resultsEl.style.display = "";
    
-     // show a simple loading skeleton in the results panel
-     const planRoot = root.querySelector("#mv-plan");
-     if (planRoot) {
-       planRoot.innerHTML =
-         '<div class="mv-loading"><div class="mv-bar"></div><div class="mv-msg">Rendering itinerary…</div></div>';
-     }
+       if (typeof showLoading === "function") showLoading("Restoring itinerary…");
    
-     // fire restore and bail out of normal init
-     restoreFromIds(__restorePlanId, __restoreTipsId || "", root);
+       try {
+         const url = RESTORE_ENDPOINT
+           + "?plan_id=" + encodeURIComponent(planId)
+           + (tipsId ? "&tips_id=" + encodeURIComponent(tipsId) : "");
+   
+         const r = await fetch(url, { method: "GET", cache: "no-store" });
+         const data = await r.json();
+         if (!data || !data.success) throw new Error((data && data.error) || "Restore failed");
+   
+         // keep ids so your “Share page” button reuses them
+         window.CITYROUTE_LAST_PLAN_ID = planId;
+         window.CITYROUTE_LAST_TIPS_ID = tipsId;
+   
+         applyRestoredResult(root, data.result);
+       } catch (err) {
+         console.error("Restore error:", err);
+         // Fall back to normal UI if restore fails
+         if (resultsEl) resultsEl.style.display = "none";
+         if (formWrap) formWrap.style.display = "";
+       } finally {
+         if (typeof hideLoading === "function") hideLoading();
+       }
+     })();
+   
+     // IMPORTANT: stop normal init when restoring
      return;
    }
+
 
 
          // --- Countries & Cities wiring (moved from top-level so it runs AFTER injection)

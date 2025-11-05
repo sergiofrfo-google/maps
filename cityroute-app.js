@@ -13,6 +13,8 @@
   const CITIES_API_URL = "https://script.google.com/macros/s/AKfycbwGocu75weAKjVd-i-dUG9ecGJQfkRrGlssl6D8FQ18iwcjKOscPmbxdNTXdPtqDOUODw/exec";
   // Static JSON with all countries (hosted on GitHub Pages)
   const COUNTRIES_URL = "https://apps.mapvivid.com/countries.json";
+   const RESTORE_ENDPOINT = "https://script.google.com/macros/s/AKfycbxoIr6q62aC_vKC1IyHZ1qogcJVxQgBD4QZSxFNq6_9nTwjxWBE1cOtJ3U_q-QWP4Haog/exec";
+
 
   async function loadCountries() {
     try {
@@ -1085,11 +1087,70 @@ function mvEmailSendFireAndForget(payload) {
   } catch (_) {}
 }
 
+   async function restoreFromIds(planId, tipsId, root) {
+  try {
+    const url =
+      RESTORE_ENDPOINT +
+      "?plan_id=" +
+      encodeURIComponent(planId) +
+      (tipsId ? "&tips_id=" + encodeURIComponent(tipsId) : "");
+
+    const res = await fetch(url, { cache: "no-store" });
+    const j = await res.json();
+    if (!j || !j.success) throw new Error((j && j.error) || "Restore failed");
+
+    const { itinerary = [], day_tips = {}, city_tips = {} } = j.result || {};
+
+    // Reuse your existing renderers so the page looks the same as a fresh run
+    renderItinerary(itinerary, "", "", day_tips);
+
+    const tipsRoot = root.querySelector("#mv-tips"); // same node you already use
+    if (tipsRoot) renderCityTipsIntoExistingContainer(tipsRoot, city_tips);
+
+    // keep Share-page working on restored views
+    window.__mvPlanID = planId;
+    window.__mvTipsID = tipsId || "";
+    if (typeof updateSharePageButton === "function") updateSharePageButton();
+  } catch (err) {
+    const planRoot = root.querySelector("#mv-plan");
+    if (planRoot) {
+      planRoot.innerHTML =
+        '<p style="color:#b91c1c">Failed to restore: ' +
+        String(err).replace(/</g, "&lt;") +
+        "</p>";
+    }
+  }
+}
+
+
 
   // -------------------------------
   // INIT — called after HTML is injected
   // -------------------------------
   function initCityRouteUI(root = document){
+     // --- restore flow: only if URL contains plan_id (and optional tips_id) ---
+   const __qs = new URLSearchParams(location.search);
+   const __restorePlanId = __qs.get("plan_id");
+   const __restoreTipsId = __qs.get("tips_id");
+   
+   if (__restorePlanId) {
+     // hide the form area so we only show results
+     const formEl =
+       root.querySelector("#mv-form") || root.querySelector('[data-role="form"]');
+     if (formEl) formEl.style.display = "none";
+   
+     // show a simple loading skeleton in the results panel
+     const planRoot = root.querySelector("#mv-plan");
+     if (planRoot) {
+       planRoot.innerHTML =
+         '<div class="mv-loading"><div class="mv-bar"></div><div class="mv-msg">Rendering itinerary…</div></div>';
+     }
+   
+     // fire restore and bail out of normal init
+     restoreFromIds(__restorePlanId, __restoreTipsId || "", root);
+     return;
+   }
+
 
          // --- Countries & Cities wiring (moved from top-level so it runs AFTER injection)
     loadCountries();

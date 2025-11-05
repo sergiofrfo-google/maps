@@ -297,6 +297,7 @@ function showSkeleton(show) {
           if (href) window.open(href, "_blank", "noopener");
         });
       }
+     updateSharePageButton(); // enable Share page if plan_id/tips_id were already set
     buildEmbeddedMap(itinerary, city, country);
   }
   // Make available like before

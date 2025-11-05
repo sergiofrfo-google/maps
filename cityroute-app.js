@@ -113,6 +113,34 @@ function showSkeleton(show) {
     window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, "_blank");
   }
 
+   function updateSharePageButton() {
+     const btn = document.getElementById('btnSharePage');
+     if (!btn) return;
+   
+     const planId = (window.__mvPlanID || '').trim();
+     const tipsId = (window.__mvTipsID || '').trim();
+   
+     // Keep hidden/disabled until we have at least one id
+     if (!planId && !tipsId) {
+       btn.style.display = 'none';
+       btn.disabled = true;
+       btn.removeAttribute('data-href');
+       return;
+     }
+   
+     // Build /ai-itinerary/?plan_id=xxx&tips_id=yyy (include whichever exists)
+     const base = location.origin + location.pathname; // stays on /ai-itinerary/
+     const qs = new URLSearchParams();
+     if (planId) qs.set('plan_id', planId);
+     if (tipsId) qs.set('tips_id', tipsId);
+     const url = base + '?' + qs.toString();
+   
+     btn.setAttribute('data-href', url);
+     btn.style.display = '';
+     btn.disabled = false;
+   }
+   
+
   // -------------------------------
   // 4. Render itinerary (same logic)
   // -------------------------------
@@ -243,7 +271,8 @@ function showSkeleton(show) {
         <div style="display:flex;gap:8px;">
           <button id="btnKML">⬇️ KML</button>
           <button id="btnPDF">🧾 PDF</button>
-          <button id="btnShare">📤 Share</button>
+          <button id="btnSharePage">🔗 Share page</button>
+          <button id="btnShare">📤 Share Text</button>
         </div>
         <button id="backBtn" style="margin-left:auto;">🔄 Generate another route</button>
       </div>`;
@@ -259,6 +288,15 @@ function showSkeleton(show) {
     document.getElementById("btnPDF").onclick    = () => exportPDF(itinerary, city, country, recommendations);
     document.getElementById("btnShare").onclick  = () => shareItinerary(itinerary, city, country, recommendations);
 
+     const sharePageBtn = document.getElementById("btnSharePage");
+      if (sharePageBtn) {
+        sharePageBtn.style.display = "none";
+        sharePageBtn.disabled = true;
+        sharePageBtn.addEventListener("click", function () {
+          const href = sharePageBtn.getAttribute("data-href") || "";
+          if (href) window.open(href, "_blank", "noopener");
+        });
+      }
     buildEmbeddedMap(itinerary, city, country);
   }
   // Make available like before
@@ -1232,6 +1270,9 @@ const handlePlan = async (planData) => {
     statusEl.textContent = "❌ " + (planData?.error || "Plan error");
     return;
   }
+   window.__mvPlanID = (planData && planData.plan_id) ? String(planData.plan_id) : "";
+   updateSharePageButton();
+
 
   setProgress(42, "Rendering itinerary…");
   // skeleton is no longer needed once we can render something real
@@ -1269,6 +1310,9 @@ const handlePlan = async (planData) => {
 
 const handleCity = async (cityTipsData) => {
   if (!cityTipsData?.success) return;
+   window.__mvTipsID = (cityTipsData && cityTipsData.tips_id) ? String(cityTipsData.tips_id) : "";
+   updateSharePageButton();
+
 
   const cityTips = (
     cityTipsData.result &&

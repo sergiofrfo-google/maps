@@ -142,6 +142,14 @@ function showSkeleton(show) {
      btn.disabled = false;
    }
    
+function buildRestoreLink(planId = (window.__mvPlanID||""), tipsId = (window.__mvTipsID||"")) {
+  const base = location.origin + location.pathname; // /ai-itinerary/
+  const qs = new URLSearchParams();
+  if (planId) qs.set("plan_id", planId);
+  if (tipsId) qs.set("tips_id", tipsId);
+  return qs.toString() ? `${base}?${qs.toString()}` : base;
+}
+   
 
   // -------------------------------
   // 4. Render itinerary (same logic)
@@ -294,10 +302,22 @@ function showSkeleton(show) {
       if (sharePageBtn) {
         sharePageBtn.style.display = "none";
         sharePageBtn.disabled = true;
-        sharePageBtn.addEventListener("click", function () {
-          const href = sharePageBtn.getAttribute("data-href") || "";
-          if (href) window.open(href, "_blank", "noopener");
-        });
+        sharePageBtn.addEventListener("click", async function () {
+           const href = sharePageBtn.getAttribute("data-href") || buildRestoreLink();
+           if (!href) return;
+           const isMobile = !!(navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent));
+           if (isMobile) {
+             try { await navigator.share({ title: "MapVivid itinerary", url: href }); } catch (_) {}
+           } else {
+             try {
+               await navigator.clipboard.writeText(href);
+               (window.showToast ? showToast("Link copied. It can be reopened for ~30 days.") : alert("Link copied. It can be reopened for ~30 days."));
+             } catch {
+               window.prompt("Copy this link (kept ~30 days):", href);
+             }
+           }
+         });
+
       }
      updateSharePageButton(); // enable Share page if plan_id/tips_id were already set
     buildEmbeddedMap(itinerary, city, country);
@@ -780,7 +800,21 @@ function downloadKML(itinerary, city, country) {
     doc.text("Tip: In Google Maps app, download the city offline to use these links without data.", margin, y);
     doc.setTextColor(0);
 
-    doc.save(`${(city || "itinerary").replace(/\s+/g,'_')}${country ? "_" + country.replace(/\s+/g,'_') : ""}.pdf`);
+   // Append restore link at the end
+   const restoreLink = buildRestoreLink();
+   if (restoreLink) {
+     y += 16;
+     if (y > pageH - margin) { doc.addPage(); y = margin; }
+     doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.setTextColor(0);
+     doc.text("Re-open later (kept ~30 days):", margin, y); y += 14;
+     doc.setFont("helvetica","normal");
+     doc.setTextColor(10, 80, 180);
+     try { doc.textWithLink(restoreLink, margin, y, { url: restoreLink }); } catch(_) { doc.text(restoreLink, margin, y); }
+     doc.setTextColor(0);
+   }
+   
+   doc.save(`${(city || "itinerary").replace(/\s+/g,'_')}${country ? "_" + country.replace(/\s+/g,'_') : ""}.pdf`);
+
   }
   window.exportPDF = exportPDF;
 
@@ -878,11 +912,17 @@ async function shareItinerary(itinerary, city, country, recommendations = {}) {
     });
   }
   html += `</div>`;
+   // Add restore link at the end of the plain text
+const __restoreLink = buildRestoreLink();
+if (__restoreLink) {
+  text += `\n\nRe-open this itinerary: ${__restoreLink}  (kept ~30 days)`;
+}
+
 
   // Mobile: native share sheet first
   if (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent)){
     try {
-      await navigator.share({ title, text });
+      await navigator.share({ title, text, url: buildRestoreLink() });
       return;
     } catch (e) { /* fallback below */ }
   }
@@ -1029,7 +1069,9 @@ function mvBuildEmailPayload() {
     ? Array.from(ALLOWED)
     : [];
 
-  return { to, city, country, itinerary, day_tips, city_tips, tip_focus };
+  const restore_url = buildRestoreLink();
+   return { to, city, country, itinerary, day_tips, city_tips, tip_focus, restore_url };
+
 }
 
 function mvEmailSendFireAndForget(payload) {

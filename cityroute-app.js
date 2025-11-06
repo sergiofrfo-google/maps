@@ -13,6 +13,7 @@
   const CITIES_API_URL = "https://script.google.com/macros/s/AKfycbwGocu75weAKjVd-i-dUG9ecGJQfkRrGlssl6D8FQ18iwcjKOscPmbxdNTXdPtqDOUODw/exec";
   // Static JSON with all countries (hosted on GitHub Pages)
   const COUNTRIES_URL = "https://apps.mapvivid.com/countries.json";
+   
 
   async function loadCountries() {
     try {
@@ -38,6 +39,7 @@
   // 1. Config + utilities
   // -------------------------------
   const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby03H4JrbcYS-EJcKJ8wRGojWMRNyejB-QG0k-dqJgZKU1xttrrbJebH0vk4vLFC6mFQA/exec";
+   const RESTORE_URL = "https://script.google.com/macros/s/AKfycbxoIr6q62aC_vKC1IyHZ1qogcJVxQgBD4QZSxFNq6_9nTwjxWBE1cOtJ3U_q-QWP4Haog/exec";
   const GMAPS_API_KEY   = "AIzaSyA6MFWoq480bdhSIEIHiedPRat4Xq8ng20";
 
   // Keep global so renderItinerary can reuse them like before
@@ -1084,6 +1086,91 @@ function mvEmailSendFireAndForget(payload) {
     window.__mvEmailSent = true;
   } catch (_) {}
 }
+// -------------------------------
+// Auto-restore from querystring
+// -------------------------------
+function tryAutoRestore(ctx = {}) {
+  const formRef       = ctx.form || document.getElementById("mv-form");
+  const itineraryRoot = ctx.itineraryEl || document.getElementById("itinerary");
+
+  const params = new URLSearchParams(location.search || "");
+  const planId = params.get("plan_id") || params.get("planId") || params.get("planID") || "";
+  const tipsId = params.get("tips_id") || params.get("tipsId") || params.get("tipsID") || "";
+  if (!planId && !tipsId) return false;
+
+  // Prepare UI
+  mvClearPreviousOutput();
+  if (formRef) formRef.style.display = "none";
+  if (itineraryRoot) itineraryRoot.style.display = "block";
+  startProgress("Restoring itinerary…");
+  showSkeleton(true);
+
+  // keep Share Page working
+  window.__mvPlanID = planId || "";
+  window.__mvTipsID = tipsId || "";
+  updateSharePageButton();
+
+  // Ensure result containers exist (#mv-plan, #mv-city-tips) exactly like the submit flow
+  (function ensureItinContainers(){
+    const wrap = itineraryRoot || document.getElementById("itinerary");
+    if (!wrap) return;
+    if (!wrap.querySelector("#mv-plan")) {
+      const d = document.createElement("div");
+      d.id = "mv-plan";
+      wrap.appendChild(d);
+    }
+    if (!wrap.querySelector("#mv-city-tips")) {
+      const d = document.createElement("div");
+      d.id = "mv-city-tips";
+      wrap.appendChild(d);
+    }
+  })();
+
+  // Fetch combined data (itinerary + per-day tips + city tips)
+  const qs = new URLSearchParams();
+  if (planId) qs.set("plan_id", planId);
+  if (tipsId) qs.set("tips_id", tipsId);
+
+  fetch(`${RESTORE_URL}?${qs.toString()}`)
+    .then(r => r.json())
+    .then(data => {
+      if (!data?.success) throw new Error(data?.error || "Restore failed");
+
+      const itinerary = Array.isArray(data.result?.itinerary) ? data.result.itinerary : [];
+      const day_tips  = (data.result && typeof data.result.day_tips  === "object") ? data.result.day_tips  : {};
+      const city_tips = (data.result && typeof data.result.city_tips === "object") ? data.result.city_tips : {};
+
+      const resultObj = { itinerary, recommendations: { per_day: day_tips } };
+
+      setProgress(45, "Rendering itinerary…");
+      showSkeleton(false);
+      renderItinerary(resultObj, "", "");
+
+      setProgress(70, "Building map…");
+      try { buildEmbeddedMap?.(itinerary, "", ""); } catch (_){}
+
+      if (Object.keys(city_tips).length) {
+        const tipsRoot = document.getElementById("mv-city-tips") || itineraryRoot;
+        renderCityTipsIntoExistingContainer(tipsRoot, city_tips);
+        window.__mvCityTips = city_tips;
+        trySendEmailIfReady();
+      }
+
+      setProgress(100, "Done");
+      endProgress();
+    })
+    .catch(err => {
+      endProgress();
+      showSkeleton(false);
+      const status = window.cityrouteStatus || document.getElementById("mv-status");
+      if (status) {
+        status.style.color = "red";
+        status.textContent = "❌ " + String(err);
+      }
+    });
+
+  return true;
+}
 
 
   // -------------------------------
@@ -1104,7 +1191,7 @@ function mvEmailSendFireAndForget(payload) {
 
     // init containers
     itineraryEl = root.querySelector("#itinerary") || document.getElementById("itinerary");
-
+   tryAutoRestore({ form, itineraryEl });
 
 
     const countryEl = document.getElementById("country");

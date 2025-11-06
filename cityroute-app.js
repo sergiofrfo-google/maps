@@ -1169,45 +1169,65 @@ function tryAutoRestore(ctx = {}) {
        human = "These saved results have expired (System keeps responses for ~30 days).";
      }
      human += " ";
-     showRestoreError(human, { formEl: document.getElementById("mv-form") });
+     showRestoreError(human);
    });
 
 
   return true;
 }
-// Friendly error for restore path + restart link
-function showRestoreError(message, { formEl } = {}) {
+// Friendly error (form stays hidden) + visible top banner with restart link
+function showRestoreError(message) {
   endProgress();
   showSkeleton(false);
 
-  // Ensure we have a status area
-  const status = window.cityrouteStatus || document.getElementById("mv-status") || (()=>{
-    const el = document.createElement("div");
-    el.id = "mv-status";
-    el.style.margin = "12px 0";
-    const host = document.querySelector("#mv-results") || document.getElementById("itinerary") || document.body;
-    host.prepend(el);
-    return el;
-  })();
+  // Ensure we’re at the top so the banner is seen
+  try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (_){ window.scrollTo(0,0); }
 
-  // Render message + restart link
-  status.innerHTML = "";
-  status.style.color = "#b00020";
-  status.style.fontWeight = "600";
+  // Create (or reuse) a top alert banner just under the site header
+  let bar = document.getElementById("mv-restore-alert");
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.id = "mv-restore-alert";
+    // Inline styles so we don’t need CSS edits
+    bar.style.position = "relative";
+    bar.style.zIndex = "100";
+    bar.style.margin = "16px auto";
+    bar.style.maxWidth = "1100px";
+    bar.style.border = "1px solid #e5b4b4";
+    bar.style.background = "#ffecec";
+    bar.style.color = "#8b0000";
+    bar.style.borderRadius = "8px";
+    bar.style.padding = "14px 16px";
+    bar.style.fontWeight = "600";
+    bar.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)";
+
+    // insert just before the itinerary/results area (near the top hero)
+    const anchor = document.querySelector("#mv-hero") ||
+                   document.querySelector(".entry-content") ||
+                   document.querySelector("#mv-results") ||
+                   document.body;
+    anchor.parentNode.insertBefore(bar, anchor);
+  }
+
+  // Render text + CTA
+  bar.innerHTML = ""; // reset
   const msg = document.createElement("div");
   msg.textContent = message;
-  const link = document.createElement("a");
-  link.href = "https://mapvivid.com/ai-itinerary/";
-  link.textContent = "Start a new itinerary";
-  link.style.display = "inline-block";
-  link.style.marginTop = "6px";
-  link.style.textDecoration = "underline";
-  status.appendChild(msg);
-  status.appendChild(link);
+  const cta = document.createElement("a");
+  cta.href = "https://mapvivid.com/ai-itinerary/";
+  cta.textContent = "Start a new itinerary";
+  cta.style.display = "inline-block";
+  cta.style.marginTop = "6px";
+  cta.style.textDecoration = "underline";
+  cta.style.color = "#0047ab";
+  bar.appendChild(msg);
+  bar.appendChild(cta);
 
-  // Bring the form back so they can search again
-  if (formEl) formEl.style.display = "";
+  // Keep the form hidden so the user isn’t pushed down the page
+  const formEl = document.getElementById("mv-form");
+  if (formEl) formEl.style.display = "none";
 }
+
 
 
   // -------------------------------

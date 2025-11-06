@@ -1160,16 +1160,53 @@ function tryAutoRestore(ctx = {}) {
       endProgress();
     })
     .catch(err => {
-      endProgress();
-      showSkeleton(false);
-      const status = window.cityrouteStatus || document.getElementById("mv-status");
-      if (status) {
-        status.style.color = "red";
-        status.textContent = "❌ " + String(err);
-      }
-    });
+     const raw = String(err || "");
+     let human = "We couldn’t restore this itinerary. The saved IDs may be wrong or expired.";
+     // Make it extra clear when it’s the 30-day window or a not-found
+     if (/not\s*found|404/i.test(raw)) {
+       human = "These saved results are no longer available (System keeps responses for ~30 days).";
+     } else if (/expired|30\s*days?/i.test(raw)) {
+       human = "These saved results have expired (System keeps responses for ~30 days).";
+     }
+     human += " ";
+     showRestoreError(human, { formEl: document.getElementById("mv-form") });
+   });
+
 
   return true;
+}
+// Friendly error for restore path + restart link
+function showRestoreError(message, { formEl } = {}) {
+  endProgress();
+  showSkeleton(false);
+
+  // Ensure we have a status area
+  const status = window.cityrouteStatus || document.getElementById("mv-status") || (()=>{
+    const el = document.createElement("div");
+    el.id = "mv-status";
+    el.style.margin = "12px 0";
+    const host = document.querySelector("#mv-results") || document.getElementById("itinerary") || document.body;
+    host.prepend(el);
+    return el;
+  })();
+
+  // Render message + restart link
+  status.innerHTML = "";
+  status.style.color = "#b00020";
+  status.style.fontWeight = "600";
+  const msg = document.createElement("div");
+  msg.textContent = message;
+  const link = document.createElement("a");
+  link.href = "https://mapvivid.com/ai-itinerary/";
+  link.textContent = "Start a new itinerary";
+  link.style.display = "inline-block";
+  link.style.marginTop = "6px";
+  link.style.textDecoration = "underline";
+  status.appendChild(msg);
+  status.appendChild(link);
+
+  // Bring the form back so they can search again
+  if (formEl) formEl.style.display = "";
 }
 
 

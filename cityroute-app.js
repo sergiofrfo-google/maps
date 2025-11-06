@@ -13,8 +13,6 @@
   const CITIES_API_URL = "https://script.google.com/macros/s/AKfycbwGocu75weAKjVd-i-dUG9ecGJQfkRrGlssl6D8FQ18iwcjKOscPmbxdNTXdPtqDOUODw/exec";
   // Static JSON with all countries (hosted on GitHub Pages)
   const COUNTRIES_URL = "https://apps.mapvivid.com/countries.json";
-   const RESTORE_ENDPOINT = "https://script.google.com/macros/s/AKfycbxoIr6q62aC_vKC1IyHZ1qogcJVxQgBD4QZSxFNq6_9nTwjxWBE1cOtJ3U_q-QWP4Haog/exec";
-
 
   async function loadCountries() {
     try {
@@ -375,73 +373,6 @@ function renderCityTipsIntoExistingContainer(rootEl, cityTips) {
    `;
 
 }
-
-function applyRestoredResult(root, result) {
-  const itinerary = Array.isArray(result.itinerary) ? result.itinerary : [];
-  const dayTips   = (result.day_tips && typeof result.day_tips === "object") ? result.day_tips : {};
-  const cityTips  = (result.city_tips && typeof result.city_tips === "object") ? result.city_tips : {};
-
-  // cache the ids so your “Share page” button keeps working after restore
-  // (the caller sets these two before invoking this renderer)
-  const shareBtn = root.querySelector("#btnSharePage");
-  if (shareBtn) shareBtn.disabled = false;
-
-  // group by day
-  const byDay = {};
-  for (const s of itinerary) {
-    const d = Number(s && s.day) || 1;
-    (byDay[d] ||= []).push(s);
-  }
-
-  // build the same 2-column “card” markup you’re already using
-  const daysWrap = root.querySelector("#mv-days");
-  if (daysWrap) {
-    const dayHtml = Object.keys(byDay)
-      .map(n => Number(n))
-      .sort((a,b)=>a-b)
-      .map(d => {
-        const stops = byDay[d]
-          .map(s => {
-            const nm = String(s.name || "");
-            const tm = String(s.time || "");
-            const ds = String(s.description || "");
-            const q = encodeURIComponent(nm);
-            return `
-              <li style="margin:6px 0 8px">
-                <strong>${tm ? tm + " — " : ""}${nm}</strong>
-                <a href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" style="color:#2563eb">Map</a>
-                ${ds ? `<br><em>${ds}</em>` : ""}
-              </li>`;
-          })
-          .join("");
-
-        const tip = dayTips && dayTips[String(d)] ? String(dayTips[String(d)]) : "";
-
-        // card like your current style
-        return `
-          <section class="mv-card" style="border:1px solid #e5e7eb;border-radius:14px;padding:14px 16px;margin:10px 0;background:#fff">
-            <h2 style="margin:0 0 8px 0">Day ${d}</h2>
-            <ul style="margin:0;padding-left:18px">${stops}</ul>
-            ${tip ? `<div style="margin-top:8px;color:#374151"><strong>Tip for Day ${d}:</strong> ${tip}</div>` : ""}
-          </section>`;
-      })
-      .join("");
-
-    // keep your grid/two-column feel
-    daysWrap.innerHTML = `<div class="mv-day-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px">${dayHtml}</div>`;
-  }
-
-  // reuse your existing city-tips renderer (you already have this function)
-  const tipsWrap = root.querySelector("#mv-citytips");
-  if (tipsWrap && typeof renderCityTipsIntoExistingContainer === "function") {
-    renderCityTipsIntoExistingContainer(root, cityTips);
-  }
-
-  // finally show results area
-  const results = root.querySelector("#mv-results");
-  if (results) results.style.display = "";
-}
-
 function ensureCityTipsSectionAndRender(cityTips) {
   let tipsRoot = document.getElementById("mv-city-tips");
   if (!tipsRoot) {
@@ -1154,91 +1085,11 @@ function mvEmailSendFireAndForget(payload) {
   } catch (_) {}
 }
 
-   async function restoreFromIds(planId, tipsId, root) {
-  try {
-    const url =
-      RESTORE_ENDPOINT +
-      "?plan_id=" +
-      encodeURIComponent(planId) +
-      (tipsId ? "&tips_id=" + encodeURIComponent(tipsId) : "");
-
-    const res = await fetch(url, { cache: "no-store" });
-    const j = await res.json();
-    if (!j || !j.success) throw new Error((j && j.error) || "Restore failed");
-
-    const { itinerary = [], day_tips = {}, city_tips = {} } = j.result || {};
-
-    // Reuse your existing renderers so the page looks the same as a fresh run
-    renderItinerary(itinerary, "", "", day_tips);
-
-    const tipsRoot = root.querySelector("#mv-tips"); // same node you already use
-    if (tipsRoot) renderCityTipsIntoExistingContainer(tipsRoot, city_tips);
-
-    // keep Share-page working on restored views
-    window.__mvPlanID = planId;
-    window.__mvTipsID = tipsId || "";
-    if (typeof updateSharePageButton === "function") updateSharePageButton();
-  } catch (err) {
-    const planRoot = root.querySelector("#mv-plan");
-    if (planRoot) {
-      planRoot.innerHTML =
-        '<p style="color:#b91c1c">Failed to restore: ' +
-        String(err).replace(/</g, "&lt;") +
-        "</p>";
-    }
-  }
-}
-
-
 
   // -------------------------------
   // INIT — called after HTML is injected
   // -------------------------------
   function initCityRouteUI(root = document){
-     // --- restore flow: only if URL contains plan_id (and optional tips_id) ---
-// --- Restore via ?plan_id=&tips_id= (run before normal init)
-   const __usp = new URLSearchParams(location.search);
-   if (__usp.get("plan_id")) {
-     (async () => {
-       const planId = __usp.get("plan_id");
-       const tipsId = __usp.get("tips_id") || "";
-   
-       const formWrap  = root.querySelector("#mv-form-wrap");
-       const resultsEl = root.querySelector("#mv-results");
-       if (formWrap) formWrap.style.display = "none";
-       if (resultsEl) resultsEl.style.display = "";
-   
-       if (typeof showLoading === "function") showLoading("Restoring itinerary…");
-   
-       try {
-         const url = RESTORE_ENDPOINT
-           + "?plan_id=" + encodeURIComponent(planId)
-           + (tipsId ? "&tips_id=" + encodeURIComponent(tipsId) : "");
-   
-         const r = await fetch(url, { method: "GET", cache: "no-store" });
-         const data = await r.json();
-         if (!data || !data.success) throw new Error((data && data.error) || "Restore failed");
-   
-         // keep ids so your “Share page” button reuses them
-         window.CITYROUTE_LAST_PLAN_ID = planId;
-         window.CITYROUTE_LAST_TIPS_ID = tipsId;
-   
-         applyRestoredResult(root, data.result);
-       } catch (err) {
-         console.error("Restore error:", err);
-         // Fall back to normal UI if restore fails
-         if (resultsEl) resultsEl.style.display = "none";
-         if (formWrap) formWrap.style.display = "";
-       } finally {
-         if (typeof hideLoading === "function") hideLoading();
-       }
-     })();
-   
-     // IMPORTANT: stop normal init when restoring
-     return;
-   }
-
-
 
          // --- Countries & Cities wiring (moved from top-level so it runs AFTER injection)
     loadCountries();

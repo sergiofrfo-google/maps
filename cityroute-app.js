@@ -917,8 +917,10 @@ const __restoreLink = buildRestoreLink();
 if (__restoreLink && !/Re-open this itinerary:/i.test(text)) {
   text += `\n\nRe-open this itinerary: ${__restoreLink}  (kept ~30 days)`;
 }
-
-
+   // Add the same link to the HTML flavor (used by desktop rich clipboard)
+if (__restoreLink && !/Re-open this itinerary/i.test(html)) {
+  html += `<p><strong>Re-open this itinerary:</strong> <a href="${__restoreLink}">${__restoreLink}</a> <em>(kept ~30 days)</em></p>`;
+}
 
   // Mobile: native share sheet first
   if (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent)){

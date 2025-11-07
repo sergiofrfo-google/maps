@@ -914,15 +914,16 @@ async function shareItinerary(itinerary, city, country, recommendations = {}) {
   html += `</div>`;
    // Add restore link at the end of the plain text
 const __restoreLink = buildRestoreLink();
-if (__restoreLink) {
+if (__restoreLink && !/Re-open this itinerary:/i.test(text)) {
   text += `\n\nRe-open this itinerary: ${__restoreLink}  (kept ~30 days)`;
 }
+
 
 
   // Mobile: native share sheet first
   if (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent)){
     try {
-      await navigator.share({ title, text, url: buildRestoreLink() });
+      await navigator.share({ title, text });
       return;
     } catch (e) { /* fallback below */ }
   }

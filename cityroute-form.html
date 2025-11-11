@@ -8,16 +8,7 @@
     <option value="">-- Select a country --</option>
   </select>
 
-  <!-- City -->
-  <label style="display:block;margin:6px 0 4px;font-weight:600">Which city are you visiting? *</label>
-  <select id="city" name="city" required
-          style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;margin-bottom:12px">
-    <option value="">-- Select a city --</option>
-  </select>
 
-  <!-- Other city manual input (hidden by default) -->
-  <input type="text" id="city_other" name="city_other" placeholder="Enter your city"
-         style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;margin-bottom:12px;display:none">
 
   <!-- Dates OR number of days -->
   <p style="margin:12px 0 6px;font-weight:600">Trip dates</p>
@@ -49,7 +40,16 @@
   </div>
 
   <p id="dates-error" style="color:red;font-size:0.9rem;margin:8px 0 0;display:none"></p>
+  <!-- City -->
+  <label style="display:block;margin:6px 0 4px;font-weight:600">Which city are you visiting? *</label>
+  <select id="city" name="city" required
+          style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;margin-bottom:12px">
+    <option value="">-- Select a city --</option>
+  </select>
 
+  <!-- Other city manual input (hidden by default) -->
+  <input type="text" id="city_other" name="city_other" placeholder="Enter your city"
+         style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;margin-bottom:12px;display:none">
   <!-- Interests -->
   <p style="margin:12px 0 6px;font-weight:600">Which types of places are you most interested in?</p>
   <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px">
@@ -65,7 +65,7 @@
   </div>
 
   <!-- Tip Focus (choose the kinds of tips you want to see) -->
-  <p style="margin:12px 0 6px;font-weight:600">Tip focus (optional)</p>
+  <p style="margin:12px 0 6px;font-weight:600">Tips (optional)</p>
   <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px">
     <label><input type="checkbox" name="tip_focus" value="transportation"> Transportation</label>
     <label><input type="checkbox" name="tip_focus" value="security"> Security</label>

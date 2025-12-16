@@ -42,6 +42,19 @@
    const RESTORE_URL = "https://script.google.com/macros/s/AKfycbxoIr6q62aC_vKC1IyHZ1qogcJVxQgBD4QZSxFNq6_9nTwjxWBE1cOtJ3U_q-QWP4Haog/exec";
   const GMAPS_API_KEY   = "AIzaSyA6MFWoq480bdhSIEIHiedPRat4Xq8ng20";
 
+   // --- GA4 helpers (expects GA tag to be installed in WordPress) ---
+function mvGaEvent(name, params = {}) {
+  if (typeof window.gtag !== "function") return;
+  window.gtag("event", name, { app: "cityroute", ...params });
+}
+function mvGaPage(path, title) {
+  if (typeof window.gtag !== "function") return;
+  window.gtag("event", "page_view", {
+    page_path: path,
+    page_title: title
+  });
+}
+
   // Keep global so renderItinerary can reuse them like before
   let itineraryEl;
 
@@ -1279,6 +1292,9 @@ function showRestoreError(message) {
   // INIT — called after HTML is injected
   // -------------------------------
   function initCityRouteUI(root = document){
+     mvGaPage("/ai-itinerary/form", "AI Itinerary Builder - Form");
+     mvGaEvent("cityroute_loaded");
+
 
          // --- Countries & Cities wiring (moved from top-level so it runs AFTER injection)
     loadCountries();
@@ -1413,6 +1429,14 @@ showSkeleton(true);
       email: pick("email")
     };
   })(form);
+       mvGaEvent("itinerary_submit", {
+  city: payload.city || "",
+  country: payload.country || "",
+  categories: payload.categories || "",
+  pace: payload.pace || ""
+});
+mvGaPage("/ai-itinerary/loading", "AI Itinerary Builder - Loading");
+
 
   // === UI start ===
   statusEl.style.color = "#374151";
@@ -1453,13 +1477,20 @@ showSkeleton(true);
   // === Process whichever arrives first, then append the other ===
 const handlePlan = async (planData) => {
   const ok = planData && planData.success;
-  if (!ok) {
-    showSkeleton(false);
-    endProgress();
-    statusEl.style.color = "red";
-    statusEl.textContent = "❌ " + (planData?.error || "Plan error");
-    return;
-  }
+   if (!ok) {
+  mvGaEvent("itinerary_error", {
+    stage: "plan",
+    error: String(planData?.error || "Plan error").slice(0, 200)
+  });
+  mvGaPage("/ai-itinerary/error", "AI Itinerary Builder - Error");
+
+  showSkeleton(false);
+  endProgress();
+  statusEl.style.color = "red";
+  statusEl.textContent = "❌ " + (planData?.error || "Plan error");
+  return;
+}
+
    window.__mvPlanID = (planData && planData.plan_id) ? String(planData.plan_id) : "";
    updateSharePageButton();
 
@@ -1484,6 +1515,13 @@ const handlePlan = async (planData) => {
     itinerary: itineraryItems,
     recommendations: { per_day: dayTips }
   };
+   
+   mvGaEvent("itinerary_generated", {
+  city: payload.city || "",
+  country: payload.country || ""
+   });
+   mvGaPage("/ai-itinerary/results", "AI Itinerary Builder - Results");
+   
   renderItinerary(combined, payload.city, payload.country);
 
   // map work
@@ -1500,8 +1538,13 @@ const handlePlan = async (planData) => {
 
 const handleCity = async (cityTipsData) => {
   if (!cityTipsData?.success) return;
-   window.__mvTipsID = (cityTipsData && cityTipsData.tips_id) ? String(cityTipsData.tips_id) : "";
-   updateSharePageButton();
+window.__mvTipsID = (cityTipsData && cityTipsData.tips_id) ? String(cityTipsData.tips_id) : "";
+updateSharePageButton();
+
+mvGaEvent("city_tips_ready", {
+  city: payload.city || "",
+  country: payload.country || ""
+});
 
 
   const cityTips = (

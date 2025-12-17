@@ -1515,6 +1515,8 @@ mvGaPage("/ai-itinerary/loading", "AI Itinerary Builder - Loading");
   // 1) plan -> itinerary + day_tips (they are related, same response)
   // 2) city_tips -> city-level tips only
   setProgress(18, "Sending requests…");
+       const tPlanReq = performance.now();
+       const tCityReq = tPlanReq;
 
   const pPlan = fetch(APPS_SCRIPT_URL, {
   method: "POST",

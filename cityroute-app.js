@@ -42,18 +42,28 @@
    const RESTORE_URL = "https://script.google.com/macros/s/AKfycbxoIr6q62aC_vKC1IyHZ1qogcJVxQgBD4QZSxFNq6_9nTwjxWBE1cOtJ3U_q-QWP4Haog/exec";
   const GMAPS_API_KEY   = "AIzaSyA6MFWoq480bdhSIEIHiedPRat4Xq8ng20";
 
-   // --- GA4 helpers (expects GA tag to be installed in WordPress) ---
+// --- GA4 helpers (expects GA tag OR GTM dataLayer to be installed in WordPress) ---
 function mvGaEvent(name, params = {}) {
-  if (typeof window.gtag !== "function") return;
-  window.gtag("event", name, { app: "cityroute", ...params });
+  const payload = { app: "cityroute", ...params };
+  if (typeof window.gtag === "function") {
+    window.gtag("event", name, payload);
+    return;
+  }
+  if (Array.isArray(window.dataLayer)) {
+    window.dataLayer.push({ event: name, ...payload });
+  }
 }
 function mvGaPage(path, title) {
-  if (typeof window.gtag !== "function") return;
-  window.gtag("event", "page_view", {
-    page_path: path,
-    page_title: title
-  });
+  const payload = { page_path: path, page_title: title, app: "cityroute" };
+  if (typeof window.gtag === "function") {
+    window.gtag("event", "page_view", payload);
+    return;
+  }
+  if (Array.isArray(window.dataLayer)) {
+    window.dataLayer.push({ event: "page_view", ...payload });
+  }
 }
+
 
   // Keep global so renderItinerary can reuse them like before
   let itineraryEl;
@@ -1286,14 +1296,47 @@ function showRestoreError(message) {
   if (formEl) formEl.style.display = "none";
 }
 
+function mvAttachFormFunnelTracking(form) {
+  if (!form) return;
 
+  let started = false;
+  const sentFields = new Set();
+
+  const startOnce = () => {
+    if (started) return;
+    started = true;
+    window.__mvFormFirstInteractAt = performance.now();
+    mvGaEvent("itinerary_form_start");
+  };
+
+  // First interaction = form started
+  ["focusin", "input", "change"].forEach(ev => {
+    form.addEventListener(ev, startOnce, { passive: true });
+  });
+
+  // Lightweight “field_change” (only once per field name to avoid spam)
+  form.addEventListener("change", (e) => {
+    const t = e.target;
+    if (!t) return;
+
+    const name = t.name || t.id || "";
+    if (!name || sentFields.has(name)) return;
+    sentFields.add(name);
+
+    mvGaEvent("itinerary_field_change", {
+      field: name,
+      type: (t.type || "").toString(),
+    });
+  }, { passive: true });
+}
 
   // -------------------------------
   // INIT — called after HTML is injected
   // -------------------------------
   function initCityRouteUI(root = document){
-     mvGaPage("/ai-itinerary/form", "AI Itinerary Builder - Form");
-     mvGaEvent("cityroute_loaded");
+   mvGaPage("/ai-itinerary/form", "AI Itinerary Builder - Form");
+   mvGaEvent("cityroute_loaded");
+   window.__mvFormLoadedAt = performance.now();
 
 
          // --- Countries & Cities wiring (moved from top-level so it runs AFTER injection)
@@ -1301,7 +1344,9 @@ function showRestoreError(message) {
     // cache key elements (same IDs as before)
      wireDateControls(root);
     const form = root.querySelector("#mv-form") || document.getElementById("mv-form");
-    const statusEl = root.querySelector("#mv-status") || document.getElementById("mv-status");
+     const statusEl = root.querySelector("#mv-status") || document.getElementById("mv-status");
+     mvAttachFormFunnelTracking(form);
+
 
     // expose for renderItinerary
     window.cityrouteForm = form;
@@ -1429,12 +1474,22 @@ showSkeleton(true);
       email: pick("email")
     };
   })(form);
-       mvGaEvent("itinerary_submit", {
+       const tSubmit = performance.now();
+window.__mvSubmitAt = tSubmit;
+
+mvGaEvent("itinerary_submit", {
   city: payload.city || "",
   country: payload.country || "",
   categories: payload.categories || "",
-  pace: payload.pace || ""
+  pace: payload.pace || "",
+  categories_count: payload.categories ? payload.categories.split(",").filter(Boolean).length : 0,
+  outputs_count: payload.outputs ? payload.outputs.split(",").filter(Boolean).length : 0,
+  has_email: !!(payload.email && payload.email.trim()),
+  no_dates: payload.no_dates ? 1 : 0,
+  ms_since_load: window.__mvFormLoadedAt ? Math.round(tSubmit - window.__mvFormLoadedAt) : undefined,
+  ms_since_start: window.__mvFormFirstInteractAt ? Math.round(tSubmit - window.__mvFormFirstInteractAt) : undefined
 });
+
 mvGaPage("/ai-itinerary/loading", "AI Itinerary Builder - Loading");
 
 
@@ -1462,14 +1517,48 @@ mvGaPage("/ai-itinerary/loading", "AI Itinerary Builder - Loading");
   setProgress(18, "Sending requests…");
 
   const pPlan = fetch(APPS_SCRIPT_URL, {
-    method: "POST",
-    body: toFD({ ...payload, mode: "plan" })
-  }).then(r => r.json());
+  method: "POST",
+  body: toFD({ ...payload, mode: "plan" })
+})
+  .then(r => r.json())
+  .then(data => {
+    mvGaEvent("itinerary_api_response", {
+      mode: "plan",
+      ok: !!data?.success,
+      ms: Math.round(performance.now() - tPlanReq)
+    });
+    return data;
+  })
+  .catch(err => {
+    mvGaEvent("itinerary_api_error", {
+      mode: "plan",
+      error: String(err || "fetch_error").slice(0, 200),
+      ms: Math.round(performance.now() - tPlanReq)
+    });
+    throw err;
+  });
 
-  const pCityTips = fetch(APPS_SCRIPT_URL, {
-    method: "POST",
-    body: toFD({ ...payload, mode: "city_tips" })
-  }).then(r => r.json());
+const pCityTips = fetch(APPS_SCRIPT_URL, {
+  method: "POST",
+  body: toFD({ ...payload, mode: "city_tips" })
+})
+  .then(r => r.json())
+  .then(data => {
+    mvGaEvent("itinerary_api_response", {
+      mode: "city_tips",
+      ok: !!data?.success,
+      ms: Math.round(performance.now() - tCityReq)
+    });
+    return data;
+  })
+  .catch(err => {
+    mvGaEvent("itinerary_api_error", {
+      mode: "city_tips",
+      error: String(err || "fetch_error").slice(0, 200),
+      ms: Math.round(performance.now() - tCityReq)
+    });
+    throw err;
+  });
    let planRendered = false;
 
    let cityTipsAppended = false;
@@ -1537,7 +1626,14 @@ const handlePlan = async (planData) => {
 
 
 const handleCity = async (cityTipsData) => {
-  if (!cityTipsData?.success) return;
+  if (!cityTipsData?.success) {
+    mvGaEvent("itinerary_error", {
+      stage: "city_tips",
+      error: String(cityTipsData?.error || "City tips error").slice(0, 200)
+    });
+    return;
+  }
+
 window.__mvTipsID = (cityTipsData && cityTipsData.tips_id) ? String(cityTipsData.tips_id) : "";
 updateSharePageButton();
 

@@ -1454,25 +1454,27 @@ showSkeleton(true);
     const pick = k => (fd.get(k) || "").toString().trim();
     const pickAll = name => Array.from(f.querySelectorAll(`input[name="${name}"]:checked`)).map(i=>i.value);
     return {
-      city: (pick("city") === "__other__" ? pick("city_other") : pick("city")),
-      country: pick("country"),
-      start_date: pick("start_date"),
-      end_date: pick("end_date"),
-      no_dates: fd.get("no_dates") ? "1" : "",
-      stay_days: pick("stay_days"),
-      categories: pickAll("categories").join(","),
-      mobility: pickAll("mobility").join(","),
-      tip_focus: pickAll("tip_focus").join(","),
-      pace: pick("pace"),
-      budget_value: pick("budget_value"),
-      budget_currency: pick("budget_currency"),
-      duration_value: pick("duration_value"),
-      duration_unit: pick("duration_unit"),
-      start_daypart: pick("start_daypart"),
-      extra_requests: pick("extra_requests"),
-      outputs: pickAll("outputs").join(","),
-      email: pick("email")
-    };
+     city: (pick("city") === "__other__" ? pick("city_other") : pick("city")),
+     country: pick("country"),
+     start_date: pick("start_date"),
+     end_date: pick("end_date"),
+     no_dates: fd.get("no_dates") ? "1" : "",
+     stay_days: pick("stay_days"),
+     categories: pickAll("categories").join(","),
+     mobility: pickAll("mobility").join(","),
+     companion_type: pick("companion_type"),
+     tip_focus: pickAll("tip_focus").join(","),
+     pace: pick("pace"),
+     budget_value: pick("budget_value"),
+     budget_currency: pick("budget_currency"),
+     duration_value: pick("duration_value"),
+     duration_unit: pick("duration_unit"),
+     start_daypart: pick("start_daypart"),
+     extra_requests: pick("extra_requests"),
+     outputs: pickAll("outputs").join(","),
+     email: pick("email")
+   };
+
   })(form);
        const tSubmit = performance.now();
 window.__mvSubmitAt = tSubmit;

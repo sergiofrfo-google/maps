@@ -23,6 +23,28 @@ const categoryColors = {
   "walking tour": "http://maps.google.com/mapfiles/ms/icons/purple-dot.png"
 };
 
+// --- GA4 helpers (expects GA tag OR GTM dataLayer to be installed in WordPress) ---
+function mvGaEvent(name, params = {}) {
+  const payload = { app: "mapsbank", ...params };
+  if (typeof window.gtag === "function") {
+    window.gtag("event", name, payload);
+    return;
+  }
+  if (Array.isArray(window.dataLayer)) {
+    window.dataLayer.push({ event: name, ...payload });
+  }
+}
+function mvGaPage(path, title) {
+  const payload = { page_path: path, page_title: title, app: "mapsbank" };
+  if (typeof window.gtag === "function") {
+    window.gtag("event", "page_view", payload);
+    return;
+  }
+  if (Array.isArray(window.dataLayer)) {
+    window.dataLayer.push({ event: "page_view", ...payload });
+  }
+}
+
 /* ---------------- Meta & Places Fetching ---------------- */
 
 async function fetchMeta() {
@@ -71,6 +93,9 @@ async function fetchPlaces(city) {
 /* ---------------- Map Init ---------------- */
 
 window.initMap = function() {
+  
+  mvGaPage(location.pathname, document.title || "City Maps by Interest");
+  mvGaEvent("mapsbank_loaded");
   map = new google.maps.Map(document.getElementById("custom-map"), {
     center: { lat: 0, lng: 0 },
     zoom: 2
@@ -185,9 +210,11 @@ async function loadMeta() {
       const checkMapsBtn = document.getElementById("checkMapsBtn");
       if (checkMapsBtn) {
         checkMapsBtn.addEventListener("click", () => {
+          const country = document.getElementById("countrySelect")?.value || "";
+          const city = document.getElementById("citySelect")?.value || "";
+          mvGaEvent("mapsbank_check_maps", { country, city });
           const loadingMessage = document.getElementById("loadingMessage");
           if (loadingMessage) loadingMessage.style.display = "block";
-      
           // Load categories now (on demand)
           updateCategories().then(() => {
             if (loadingMessage) loadingMessage.style.display = "none";
@@ -199,14 +226,26 @@ async function loadMeta() {
 const exportBtn = document.getElementById("exportPdfBtn");
 if (exportBtn) {
   exportBtn.removeAttribute("disabled");     // ← enable the button in the DOM
-  exportBtn.addEventListener("click", exportBankPDF);
+  exportBtn.addEventListener("click", () => {
+  const country = document.getElementById("countrySelect")?.value || "";
+  const city = document.getElementById("citySelect")?.value || "";
+  mvGaEvent("mapsbank_export_pdf", { country, city });
+  exportBankPDF();
+});
+
 }
 
 // KML export button
 const kmlBtn = document.getElementById("exportKmlBtn");
 if (kmlBtn) {
   kmlBtn.removeAttribute("disabled");
-  kmlBtn.addEventListener("click", exportBankKML);
+  kmlBtn.addEventListener("click", () => {
+  const country = document.getElementById("countrySelect")?.value || "";
+  const city = document.getElementById("citySelect")?.value || "";
+  mvGaEvent("mapsbank_export_kml", { country, city });
+  exportBankKML();
+});
+
 }
 
 // Share buttons
@@ -217,14 +256,14 @@ if (shareBtn) {
     const payload = buildSharePayload(false);   // places only
     const title = (payload.text.split("\n")[0] || "Places");
     // Mobile: native share sheet; Desktop: rich clipboard (HTML + plain)
-    if (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent)) {
-      try {
-        await navigator.share({ title, text: payload.text });
-        return;
-      } catch (e) { /* fallback to clipboard */ }
+    const isMobileShare = (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent));
+    mvGaEvent("mapsbank_share", { with_tips: 0, method: isMobileShare ? "native" : "clipboard" });
+    if (isMobileShare) {
+      try { await navigator.share({ title, text: payload.text }); return; } catch (e) { /* fallback to clipboard */ }
     }
     await copyToClipboard(payload);
     flashCopied(shareBtn);
+
   });
 }
 
@@ -234,11 +273,10 @@ if (shareTipsBtn) {
   shareTipsBtn.addEventListener("click", async () => {
     const payload = buildSharePayload(true);    // places + tips
     const title = (payload.text.split("\n")[0] || "Places & Tips");
-    if (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent)) {
-      try {
-        await navigator.share({ title, text: payload.text });
-        return;
-      } catch (e) { /* fallback to clipboard */ }
+    const isMobileShare = (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent));
+    mvGaEvent("mapsbank_share", { with_tips: 1, method: isMobileShare ? "native" : "clipboard" });
+    if (isMobileShare) {
+      try { await navigator.share({ title, text: payload.text }); return; } catch (e) { /* fallback to clipboard */ }
     }
     await copyToClipboard(payload);
     flashCopied(shareTipsBtn);

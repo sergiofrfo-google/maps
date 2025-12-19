@@ -41,6 +41,8 @@
   const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby03H4JrbcYS-EJcKJ8wRGojWMRNyejB-QG0k-dqJgZKU1xttrrbJebH0vk4vLFC6mFQA/exec";
    const RESTORE_URL = "https://script.google.com/macros/s/AKfycbxoIr6q62aC_vKC1IyHZ1qogcJVxQgBD4QZSxFNq6_9nTwjxWBE1cOtJ3U_q-QWP4Haog/exec";
   const GMAPS_API_KEY   = "AIzaSyA6MFWoq480bdhSIEIHiedPRat4Xq8ng20";
+   const TIP_ORDER = ["transportation","security","saving","weather_clothing","cultural","local_hacks","tipping_payment_methods","internet_sim_cards","meetups_social_events"]; 
+   const TIP_LABELS = { transportation: "Transportation", security: "Security", saving: "Saving", weather_clothing: "Weather/Clothing", cultural: "Cultural", local_hacks: "Local hacks", tipping_payment_methods: "Tipping & Payment Methods", internet_sim_cards: "Internet & SIM Cards", meetups_social_events: "Meetups & Social Events" }; 
 
 // --- GA4 helpers (expects GA tag OR GTM dataLayer to be installed in WordPress) ---
 function mvGaEvent(name, params = {}) {
@@ -180,17 +182,6 @@ function buildRestoreLink(planId = (window.__mvPlanID||""), tipsId = (window.__m
   function renderItinerary(result, city, country) {
     const { itinerary, recommendations } = result || {};
     if (!Array.isArray(itinerary) || itinerary.length === 0) return;
-
-    const TIP_ORDER = ["transportation","security","saving","weather_clothing","cultural","local_hacks"];
-    const TIP_LABELS = {
-      transportation: "Transportation",
-      security: "Security",
-      saving: "Saving",
-      weather_clothing: "Weather/Clothing",
-      cultural: "Cultural",
-      local_hacks: "Local hacks"
-    };
-
     const selectedFocus = Array.from(document.querySelectorAll('input[name="tip_focus"]:checked')).map(i=>i.value);
     const ALLOWED = new Set(selectedFocus);
 
@@ -391,11 +382,7 @@ function renderItineraryWithDayTips(items, dayTipsObj, rootEl) {
 
 
 function renderCityTipsIntoExistingContainer(rootEl, cityTips) {
-  const label = k =>
-    (typeof TIP_LABELS === "object" && TIP_LABELS[k])
-      ? TIP_LABELS[k]
-      : k.replaceAll("_"," ");
-
+  const label = k => TIP_LABELS[k] ? TIP_LABELS[k] : k.replaceAll("_"," ");
   const blocks = Object.entries(cityTips || {}).map(([k, arr]) => {
     if (!Array.isArray(arr) || !arr.length) return "";
     return `
@@ -684,17 +671,6 @@ function downloadKML(itinerary, city, country) {
     const pageH = doc.internal.pageSize.getHeight();
     const margin = 46;
     let y = margin;
-
-    const TIP_ORDER = ["transportation","security","saving","weather_clothing","cultural","local_hacks"];
-    const TIP_LABELS = {
-      transportation: "Transportation",
-      security: "Security",
-      saving: "Saving",
-      weather_clothing: "Weather/Clothing",
-      cultural: "Cultural",
-      local_hacks: "Local hacks"
-    };
-
     const selectedFocus = Array.from(document.querySelectorAll('input[name="tip_focus"]:checked')).map(i=>i.value);
     const ALLOWED = new Set(selectedFocus);
 
@@ -845,15 +821,6 @@ function downloadKML(itinerary, city, country) {
   // 9. Export: Share (same)
   // -------------------------------
 async function shareItinerary(itinerary, city, country, recommendations = {}) {
-  const TIP_ORDER = ["transportation","security","saving","weather_clothing","cultural","local_hacks"];
-  const TIP_LABELS = {
-    transportation: "Transportation",
-    security: "Security",
-    saving: "Saving",
-    weather_clothing: "Weather/Clothing",
-    cultural: "Cultural",
-    local_hacks: "Local hacks",
-  };
 
   const selectedFocus = Array.from(document.querySelectorAll('input[name="tip_focus"]:checked')).map(i=>i.value);
   const ALLOWED = new Set(selectedFocus);

@@ -1,0 +1,174 @@
+<!-- MapVivid — AI Itinerary Builder (Async: Firebase + Cloud Run) -->
+<link rel="stylesheet" href="https://raw.githubusercontent.com/sergiofrfo-google/maps/main/cityroute-firebase.css">
+
+<div class="mv-wrap" id="mv-app">
+  <h2 class="mv-title">Build your personalized city route</h2>
+
+  <form id="mv-form" class="mv-form">
+    <div class="mv-grid">
+      <label class="mv-field">
+        <span>Country *</span>
+        <select id="country" name="country" required>
+          <option value="">-- Select a country --</option>
+        </select>
+      </label>
+
+      <label class="mv-field">
+        <span>City *</span>
+        <select id="city" name="city" required>
+          <option value="">-- Select a city --</option>
+          <option value="__other__">Other (type manually)</option>
+        </select>
+        <input id="city_other" name="city_other" class="mv-input" style="display:none;margin-top:8px" placeholder="Type your city">
+      </label>
+    </div>
+
+    <div class="mv-section">
+      <div class="mv-section-title">Trip dates</div>
+
+      <div class="mv-grid">
+        <label class="mv-field">
+          <span>Start date</span>
+          <input class="mv-input" type="date" id="start_date" name="start_date">
+        </label>
+
+        <label class="mv-field">
+          <span>End date</span>
+          <input class="mv-input" type="date" id="end_date" name="end_date">
+        </label>
+      </div>
+
+      <label class="mv-check">
+        <input type="checkbox" id="no_dates" name="no_dates" value="1">
+        <span>I don’t have specific dates</span>
+      </label>
+
+      <label class="mv-field" style="max-width:360px">
+        <span>How many days will you stay? (max 7)</span>
+        <input class="mv-input" type="number" min="1" max="7" id="stay_days" name="stay_days" placeholder="e.g. 3">
+        <small class="mv-hint">If dates are set, this will be calculated automatically.</small>
+      </label>
+    </div>
+
+    <div class="mv-section">
+      <div class="mv-section-title">Which types of places are you most interested in?</div>
+      <div class="mv-chips">
+        <label><input type="checkbox" name="categories" value="museums">Museums</label>
+        <label><input type="checkbox" name="categories" value="food_restaurants">Food/Restaurants</label>
+        <label><input type="checkbox" name="categories" value="local_markets">Local markets</label>
+        <label><input type="checkbox" name="categories" value="instagram_spots">Instagram spots</label>
+        <label><input type="checkbox" name="categories" value="parks_nature_beaches">Parks/Nature/Beaches</label>
+        <label><input type="checkbox" name="categories" value="historical_sites">Historical sites</label>
+        <label><input type="checkbox" name="categories" value="nightlife">Nightlife</label>
+        <label><input type="checkbox" name="categories" value="shopping">Shopping</label>
+        <label><input type="checkbox" name="categories" value="festivals_events">Festivals/Events</label>
+      </div>
+    </div>
+
+    <div class="mv-section">
+      <div class="mv-section-title">Tips (optional)</div>
+      <div class="mv-chips">
+        <label><input type="checkbox" name="tip_focus" value="transportation">Transportation</label>
+        <label><input type="checkbox" name="tip_focus" value="security">Security</label>
+        <label><input type="checkbox" name="tip_focus" value="saving">Saving</label>
+        <label><input type="checkbox" name="tip_focus" value="weather_clothing">Weather/Clothing</label>
+        <label><input type="checkbox" name="tip_focus" value="cultural">Cultural</label>
+        <label><input type="checkbox" name="tip_focus" value="local_hacks">Local hacks</label>
+        <label><input type="checkbox" name="tip_focus" value="tipping_payment_methods">Tipping & Payment Methods</label>
+        <label><input type="checkbox" name="tip_focus" value="internet_sim_cards">Internet & SIM Cards</label>
+        <label><input type="checkbox" name="tip_focus" value="meetups_social_events">Meetups & Social Events</label>
+      </div>
+    </div>
+
+    <div class="mv-section">
+      <div class="mv-section-title">How would you like to get around?</div>
+      <div class="mv-chips">
+        <label><input type="checkbox" name="mobility" value="walking">Walking</label>
+        <label><input type="checkbox" name="mobility" value="public_transport">Public transport</label>
+        <label><input type="checkbox" name="mobility" value="ride_hailing">Ride-hailing (Uber, taxi)</label>
+        <label><input type="checkbox" name="mobility" value="bicycle">Bicycle</label>
+        <label><input type="checkbox" name="mobility" value="car_rental">Car rental</label>
+      </div>
+    </div>
+
+    <div class="mv-grid">
+      <label class="mv-field">
+        <span>Who are you traveling with?</span>
+        <select class="mv-input" name="companion_type" id="companion_type">
+          <option value="">Unspecified</option>
+          <option value="solo">Solo</option>
+          <option value="couple">Couple</option>
+          <option value="friends">Friends</option>
+          <option value="family">Family</option>
+          <option value="family_with_kids">Family with kids</option>
+        </select>
+      </label>
+
+      <label class="mv-field">
+        <span>Preferred pace (1–5)</span>
+        <input class="mv-input" type="range" min="1" max="5" value="3" id="pace" name="pace">
+        <small class="mv-hint">1 = very relaxed · 5 = very intense</small>
+      </label>
+    </div>
+
+    <div class="mv-grid">
+      <label class="mv-field">
+        <span>Approx. budget per day</span>
+        <input class="mv-input" type="number" min="0" step="1" id="budget_value" name="budget_value" placeholder="e.g. 60">
+      </label>
+
+      <label class="mv-field">
+        <span>Currency</span>
+        <select class="mv-input" id="budget_currency" name="budget_currency">
+          <option value="USD">$ USD</option>
+          <option value="EUR">€ EUR</option>
+          <option value="COP">$ COP</option>
+          <option value="BRL">R$ BRL</option>
+        </select>
+      </label>
+    </div>
+
+    <label class="mv-field">
+      <span>Additional requests (optional)</span>
+      <textarea class="mv-input" rows="3" id="extra_requests" name="extra_requests" placeholder="Anything special you want?"></textarea>
+    </label>
+
+    <label class="mv-field" style="max-width:520px">
+      <span>Email to receive your itinerary (optional)</span>
+      <input class="mv-input" type="email" id="email" name="email" placeholder="you@email.com">
+      <small class="mv-hint">If provided, we’ll email you when it’s ready.</small>
+    </label>
+
+    <!-- Keep these for compatibility with your existing payload shape -->
+    <input type="hidden" name="duration_value" id="duration_value" value="">
+    <input type="hidden" name="duration_unit" id="duration_unit" value="">
+    <input type="hidden" name="start_daypart" id="start_daypart" value="">
+    <input type="hidden" name="outputs" id="outputs" value="">
+
+    <div class="mv-actions">
+      <button type="submit" class="mv-btn mv-primary" id="mv-submit">Generate my route</button>
+      <button type="button" class="mv-btn" id="mv-copy-link" style="display:none;">Copy status link</button>
+    </div>
+
+    <div id="mv-status" class="mv-status"></div>
+
+    <div id="mv-progress" class="mv-progress" style="display:none;">
+      <div class="mv-progress-bar" id="mv-progress-bar" style="width:0%"></div>
+      <div class="mv-progress-label" id="mv-progress-label">Preparing…</div>
+    </div>
+  </form>
+
+  <div id="itinerary" class="mv-results" style="display:none;">
+    <div class="mv-results-head">
+      <button class="mv-btn" id="mv-back">Generate another route</button>
+      <span id="mv-job-badge" class="mv-badge"></span>
+    </div>
+
+    <div id="mv-map" class="mv-map"></div>
+
+    <div id="mv-plan" class="mv-plan"></div>
+    <div id="mv-city-tips" class="mv-city-tips"></div>
+  </div>
+</div>
+
+<script src="https://raw.githubusercontent.com/sergiofrfo-google/maps/main/cityroute-firebase-app.js" type="module"></script>

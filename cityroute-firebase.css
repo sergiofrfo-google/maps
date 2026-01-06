@@ -1,0 +1,33 @@
+.mv-wrap{max-width:980px;margin:0 auto;padding:18px 14px;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial}
+.mv-title{font-size:28px;margin:0 0 14px 0}
+.mv-form{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px}
+.mv-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:720px){.mv-grid{grid-template-columns:1fr}}
+.mv-field span{display:block;font-weight:600;margin:0 0 6px 0}
+.mv-input, select, textarea{width:100%;border:1px solid #d1d5db;border-radius:10px;padding:10px 10px;font-size:14px;outline:none}
+.mv-input:focus, select:focus, textarea:focus{border-color:#111827}
+.mv-check{display:flex;gap:10px;align-items:center;margin-top:10px}
+.mv-section{margin-top:14px;padding-top:14px;border-top:1px solid #f3f4f6}
+.mv-section-title{font-weight:800;margin-bottom:8px}
+.mv-chips{display:flex;flex-wrap:wrap;gap:8px}
+.mv-chips label{display:inline-flex;gap:8px;align-items:center;border:1px solid #e5e7eb;border-radius:999px;padding:8px 10px;background:#fafafa;cursor:pointer}
+.mv-chips input{accent-color:#111827}
+.mv-hint{display:block;color:#6b7280;margin-top:6px}
+.mv-actions{display:flex;gap:10px;align-items:center;margin-top:14px}
+.mv-btn{border:1px solid #d1d5db;background:#fff;border-radius:10px;padding:10px 12px;cursor:pointer}
+.mv-primary{background:#111827;color:#fff;border-color:#111827}
+.mv-status{margin-top:10px;color:#374151}
+.mv-progress{position:relative;margin-top:10px;border:1px solid #e5e7eb;border-radius:999px;overflow:hidden;height:30px}
+.mv-progress-bar{position:absolute;left:0;top:0;bottom:0;background:#111827}
+.mv-progress-label{position:relative;text-align:center;line-height:30px;color:#fff;font-weight:700;font-size:13px;text-shadow:0 1px 0 rgba(0,0,0,.35)}
+.mv-results{margin-top:14px;border:1px solid #e5e7eb;border-radius:14px;padding:14px;background:#fff}
+.mv-results-head{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:10px}
+.mv-badge{font-size:12px;color:#374151;background:#f3f4f6;border-radius:999px;padding:6px 10px}
+.mv-map{width:100%;height:420px;border:1px solid #e5e7eb;border-radius:14px;margin:10px 0 14px 0}
+.mv-day{border:1px solid #e5e7eb;border-radius:14px;padding:12px;margin:10px 0;background:#fff}
+.mv-day h3{margin:0 0 8px 0}
+.mv-stop{margin:8px 0;padding:8px;border-radius:10px;background:#fafafa}
+.mv-stop a{color:#2563eb;text-decoration:none}
+.mv-stop a:hover{text-decoration:underline}
+.mv-city-tips h3{margin:18px 0 8px 0}
+.mv-tip-block{border:1px solid #e5e7eb;border-radius:14px;padding:12px;margin:10px 0;background:#fff}

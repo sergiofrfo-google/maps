@@ -11,16 +11,16 @@ import {
  *  CONFIG (YOU MUST EDIT)
  *  ========================= */
 const FIREBASE_CONFIG = {
-  apiKey: "YOUR_FIREBASE_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  apiKey: "AIzaSyCzpRvO1XGB7D0JfHcct_9RFXdg4YP41Bo",
+  authDomain: "mapvivid-com.firebaseapp.com",
   projectId: "mapvivid-com",
-  appId: "YOUR_APP_ID",
+  appId: "1:162845718290:web:84394a11e98ea56088a5cb",
 };
 
 const CLOUD_RUN_BASE_URL = "https://YOUR_CLOUD_RUN_SERVICE_URL"; // no trailing slash
 const COUNTRIES_URL = "https://apps.mapvivid.com/countries.json"; // you already use this
 const CITIES_API_URL = "https://script.google.com/macros/s/AKfycbwGocu75weAKjVd-i-dUG9ecGJQfkRrGlssl6D8FQ18iwcjKOscPmbxdNTXdPtqDOUODw/exec"; // optional (fast), replace later if you want
-const GMAPS_API_KEY = "YOUR_GOOGLE_MAPS_KEY";
+const GMAPS_API_KEY = "AIzaSyA6MFWoq480bdhSIEIHiedPRat4Xq8ng20";
 
 /** =========================
  *  Small helpers

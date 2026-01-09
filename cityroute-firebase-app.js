@@ -10,9 +10,22 @@
   // 0. Countries & Cities loader
   // -------------------------------
   // Separate endpoint for cities lookup (your deployed Apps Script Web App)
-  const CITIES_API_URL = "https://script.google.com/macros/s/AKfycbwGocu75weAKjVd-i-dUG9ecGJQfkRrGlssl6D8FQ18iwcjKOscPmbxdNTXdPtqDOUODw/exec";
-  // Static JSON with all countries (hosted on GitHub Pages)
-  const COUNTRIES_URL = "https://apps.mapvivid.com/countries.json";
+// --- Cloud Run (NEW) ---
+const CLOUD_RUN_BASE_URL = "https://maps-162845718290.europe-west1.run.app";
+
+// Keep your countries.json as-is
+const COUNTRIES_URL = "https://apps.mapvivid.com/countries.json";
+
+// (Optional for later) If you also want to remove the GAS "cities" endpoint,
+// you’ll point this to Cloud Run too. For now leave it as-is OR change it when your Cloud Run route exists.
+const CITIES_API_URL = "https://script.google.com/macros/s/AKfycbwGocu75weAKjVd-i-dUG9ecGJQfkRrGlssl6D8FQ18iwcjKOscPmbxdNTXdPtqDOUODw/exec";
+
+// --- CityRoute async endpoints on Cloud Run (NEW) ---
+// IMPORTANT: these paths must match your Cloud Run server code.
+const CITYROUTE_START_URL  = `${CLOUD_RUN_BASE_URL}/cityroute/start`;
+const CITYROUTE_STATUS_URL = (jobId) => `${CLOUD_RUN_BASE_URL}/cityroute/status?job_id=${encodeURIComponent(jobId)}`;
+const CITYROUTE_RESULT_URL = (jobId) => `${CLOUD_RUN_BASE_URL}/cityroute/result?job_id=${encodeURIComponent(jobId)}`;
+
    
 
   async function loadCountries() {
@@ -38,8 +51,7 @@
   // -------------------------------
   // 1. Config + utilities
   // -------------------------------
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby03H4JrbcYS-EJcKJ8wRGojWMRNyejB-QG0k-dqJgZKU1xttrrbJebH0vk4vLFC6mFQA/exec";
-   const RESTORE_URL = "https://script.google.com/macros/s/AKfycbxoIr6q62aC_vKC1IyHZ1qogcJVxQgBD4QZSxFNq6_9nTwjxWBE1cOtJ3U_q-QWP4Haog/exec";
+
   const GMAPS_API_KEY   = "AIzaSyA6MFWoq480bdhSIEIHiedPRat4Xq8ng20";
    const TIP_ORDER = ["transportation","security","saving","weather_clothing","cultural","local_hacks","tipping_payment_methods","internet_sim_cards","meetups_social_events"]; 
    const TIP_LABELS = { transportation: "Transportation", security: "Security", saving: "Saving", weather_clothing: "Weather/Clothing", cultural: "Cultural", local_hacks: "Local hacks", tipping_payment_methods: "Tipping & Payment Methods", internet_sim_cards: "Internet & SIM Cards", meetups_social_events: "Meetups & Social Events" }; 

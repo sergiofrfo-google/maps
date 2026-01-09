@@ -17,7 +17,7 @@ const FIREBASE_CONFIG = {
   appId: "1:162845718290:web:84394a11e98ea56088a5cb",
 };
 
-const CLOUD_RUN_BASE_URL = "https://YOUR_CLOUD_RUN_SERVICE_URL"; // no trailing slash
+const CLOUD_RUN_BASE_URL = "https://maps-162845718290.europe-west1.run.app"; // no trailing slash
 const COUNTRIES_URL = "https://apps.mapvivid.com/countries.json"; // you already use this
 const CITIES_API_URL = "https://script.google.com/macros/s/AKfycbwGocu75weAKjVd-i-dUG9ecGJQfkRrGlssl6D8FQ18iwcjKOscPmbxdNTXdPtqDOUODw/exec"; // optional (fast), replace later if you want
 const GMAPS_API_KEY = "AIzaSyA6MFWoq480bdhSIEIHiedPRat4Xq8ng20";

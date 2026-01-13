@@ -425,7 +425,9 @@ function buildRestoreLink(jobId) {
            } else {
              try {
                await navigator.clipboard.writeText(href);
-               (window.showToast ? showToast("Link copied. It can be reopened for ~30 days.") : alert("Link copied. It can be reopened for ~30 days."));
+                const msg = "Link copied.\nIt can be reopened for ~30 days.";
+                (window.showToast ? showToast(msg) : alert(msg));
+
              } catch {
                window.prompt("Copy this link (kept ~30 days):", href);
              }

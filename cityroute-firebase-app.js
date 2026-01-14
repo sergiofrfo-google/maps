@@ -498,13 +498,14 @@ function renderCityTipsIntoExistingContainer(rootEl, cityTips) {
   }).join("");
 
    rootEl.innerHTML = `
-   <hr style="border:none;height:1px;background:#e5e7eb;margin:16px 0">
-   <h3 style="font-weight:700;margin:0 0 8px">City tips</h3>
-   ${blocks
-     ? `<div class="mv-tips-grid">${blocks}</div>`
-     : "<div style='color:#9ca3af'>No city tip categories selected.</div>"
-   }
-   `;
+  <hr class="mv-hr">
+  <h3>City tips</h3>
+  ${
+    blocks
+      ? `<div class="mv-tips-grid">${blocks}</div>`
+      : "<div style='color:#9ca3af'>No city tip categories selected.</div>"
+  }
+`;
 
 }
 function ensureCityTipsSectionAndRender(cityTips) {

@@ -1757,28 +1757,28 @@ const unsub = mvWatchJob(
       setProgress(96, "Final touches…");
       endProgress();
       statusEl.textContent = "";
-    }
-  },
-  (err) => {
-    if (finished) return;
-    finished = true;
-    unsub();
-    showSkeleton(false);
-    endProgress();
-    statusEl.style.color = "red";
-    statusEl.textContent = "❌ " + String(err || "Job watch failed");
-  }
-);
+            }
+        },
+        (err) => {
+          if (finished) return;
+          finished = true;
+          unsub();
+          showSkeleton(false);
+          endProgress();
+          statusEl.style.color = "red";
+          statusEl.textContent = "❌ " + String(err || "Job watch failed");
+        }
+      ); // end mvWatchJob(...)
+
+    }); // end form.addEventListener("submit", async function(e) { ... });
 
 
-  }
-   
 // expose for WP inline caller + console
 if (typeof window !== "undefined") {
   window.initCityRouteUI = initCityRouteUI;
 }
 
-  // expose init for the loader
-  window.initCityRouteUI = initCityRouteUI;
+// expose init for the loader
+window.initCityRouteUI = initCityRouteUI;
 
 })();

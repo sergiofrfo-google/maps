@@ -1298,7 +1298,7 @@ async function tryAutoRestore() {
       statusEl.textContent = "❌ " + String(err || "Restore failed");
     }
   );
-}
+  }); // end form.addEventListener("submit", async function(e) { ... });
 
 // Friendly error (form stays hidden) + visible top banner with restart link
 function showRestoreError(message) {

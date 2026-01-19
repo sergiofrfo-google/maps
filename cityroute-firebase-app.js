@@ -1200,7 +1200,7 @@ function mvEmailSendFireAndForget(payload) {
 // -------------------------------
 // Auto-restore from querystring
 // -------------------------------
-function tryAutoRestore(ctx = {}) {
+async function tryAutoRestore(ctx = {}) {
   const formRef       = ctx.form || document.getElementById("mv-form");
   const itineraryRoot = ctx.itineraryEl || document.getElementById("itinerary");
 
@@ -1474,7 +1474,7 @@ function mvAttachFormFunnelTracking(form) {
 
     // init containers
     itineraryEl = root.querySelector("#itinerary") || document.getElementById("itinerary");
-   tryAutoRestore({ form, itineraryEl });
+   tryAutoRestore({ form, itineraryEl }).catch(console.error);
 
 
     const countryEl = document.getElementById("country");

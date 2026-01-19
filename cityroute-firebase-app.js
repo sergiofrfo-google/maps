@@ -35,12 +35,84 @@ import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasej
     }
   }
 
-  // -------------------------------
-  // 1. Config + utilities
-  // -------------------------------
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby03H4JrbcYS-EJcKJ8wRGojWMRNyejB-QG0k-dqJgZKU1xttrrbJebH0vk4vLFC6mFQA/exec";
-   const RESTORE_URL = "https://script.google.com/macros/s/AKfycbxoIr6q62aC_vKC1IyHZ1qogcJVxQgBD4QZSxFNq6_9nTwjxWBE1cOtJ3U_q-QWP4Haog/exec";
-  const GMAPS_API_KEY   = "AIzaSyA6MFWoq480bdhSIEIHiedPRat4Xq8ng20";
+// -------------------------------
+// 1. Config + utilities
+// -------------------------------
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby03H4JrbcYS-EJcKJ8wRGojWMRNyejB-QG0k-dqJgZKU1xttrrbJebH0vk4vLFC6mFQA/exec";
+const RESTORE_URL = "https://script.google.com/macros/s/AKfycbxoIr6q62aC_vKC1IyHZ1qogcJVxQgBD4QZSxFNq6_9nTwjxWBE1cOtJ3U_q-QWP4Haog/exec";
+
+// Cloud Run base + Firebase config are provided by your PageLayer snippet
+const CLOUD_RUN_BASE_URL = String(window.MV_CLOUD_RUN_BASE_URL || "").replace(/\/+$/, "");
+const FIREBASE_WEB_CONFIG = window.MV_FIREBASE_CONFIG || null;
+
+const GMAPS_API_KEY = "AIzaSyA6MFWoq480bdhSIEIHiedPRat4Xq8ng20";
+
+// --- Firebase singletons ---
+let __fbApp = null;
+let __fbAuth = null;
+let __fbDb = null;
+let __fbReady = null;
+
+function initFirebaseOnce() {
+  if (__fbReady) return __fbReady;
+  __fbReady = (async () => {
+    if (!FIREBASE_WEB_CONFIG) throw new Error("Missing MV_FIREBASE_CONFIG");
+    __fbApp = initializeApp(FIREBASE_WEB_CONFIG);
+    __fbAuth = getAuth(__fbApp);
+    __fbDb = getFirestore(__fbApp);
+
+    // Persist anonymous user in this browser so restores work
+    try { await signInAnonymously(__fbAuth); } catch (_) {}
+    return { app: __fbApp, auth: __fbAuth, db: __fbDb };
+  })();
+  return __fbReady;
+}
+
+async function getFirebaseIdToken() {
+  const { auth } = await initFirebaseOnce();
+  // If already signed in, reuse; otherwise sign in
+  if (!auth.currentUser) {
+    await signInAnonymously(auth);
+  }
+  return await auth.currentUser.getIdToken(/* forceRefresh */ false);
+}
+
+async function cloudRunCreateJob(input) {
+  if (!CLOUD_RUN_BASE_URL) throw new Error("Missing MV_CLOUD_RUN_BASE_URL");
+  const idToken = await getFirebaseIdToken();
+
+  const res = await fetch(`${CLOUD_RUN_BASE_URL}/v1/jobs`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${idToken}`
+    },
+    body: JSON.stringify(input)
+  });
+
+  const txt = await res.text();
+  if (!res.ok) throw new Error(`Cloud Run ${res.status}: ${txt.slice(0, 300)}`);
+  const data = JSON.parse(txt);
+  if (!data.jobId) throw new Error("Missing jobId in response");
+  return String(data.jobId);
+}
+
+function applyTipFocusSelection(tipFocusArr) {
+  const arr = Array.isArray(tipFocusArr) ? tipFocusArr : [];
+  document.querySelectorAll('input[name="tip_focus"]').forEach(cb => {
+    cb.checked = arr.includes(cb.value);
+  });
+}
+
+async function listenToJobDoc(jobId, onUpdate) {
+  const { db } = await initFirebaseOnce();
+  const ref = doc(db, "jobs", jobId);
+  return onSnapshot(ref, (snap) => {
+    if (!snap.exists()) return;
+    onUpdate(snap.data() || {});
+  });
+}
+
    const TIP_ORDER = ["transportation","security","saving","weather_clothing","cultural","local_hacks","tipping_payment_methods","internet_sim_cards","meetups_social_events"]; 
    const TIP_LABELS = { transportation: "Transportation", security: "Security", saving: "Saving", weather_clothing: "Weather/Clothing", cultural: "Cultural", local_hacks: "Local hacks", tipping_payment_methods: "Tipping & Payment Methods", internet_sim_cards: "Internet & SIM Cards", meetups_social_events: "Meetups & Social Events" }; 
 
@@ -140,41 +212,45 @@ function showSkeleton(show) {
     window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, "_blank");
   }
 
-   function updateSharePageButton() {
-     const btn = document.getElementById('btnSharePage');
-     if (!btn) return;
-   
-     const planId = (window.__mvPlanID || '').trim();
-     const tipsId = (window.__mvTipsID || '').trim();
-   
-     // Keep hidden/disabled until we have at least one id
-     if (!planId && !tipsId) {
-       btn.style.display = 'none';
-       btn.disabled = true;
-       btn.removeAttribute('data-href');
-       return;
-     }
-   
-     // Build /ai-itinerary/?plan_id=xxx&tips_id=yyy (include whichever exists)
-     const base = location.origin + location.pathname; // stays on /ai-itinerary/
-     const qs = new URLSearchParams();
-     if (planId) qs.set('plan_id', planId);
-     if (tipsId) qs.set('tips_id', tipsId);
-     const url = base + '?' + qs.toString();
-   
-     btn.setAttribute('data-href', url);
-     btn.style.display = '';
-     btn.disabled = false;
-   }
-   
-function buildRestoreLink(planId = (window.__mvPlanID||""), tipsId = (window.__mvTipsID||"")) {
-  const base = location.origin + location.pathname; // /ai-itinerary/
+function updateSharePageButton() {
+  const btn = document.getElementById('btnSharePage');
+  if (!btn) return;
+
+  const jobId  = (window.__mvJobID  || '').trim();
+  const planId = (window.__mvPlanID || '').trim();
+  const tipsId = (window.__mvTipsID || '').trim();
+
+  if (!jobId && !planId && !tipsId) {
+    btn.style.display = 'none';
+    btn.disabled = true;
+    btn.removeAttribute('data-href');
+    return;
+  }
+
+  const base = location.origin + location.pathname;
   const qs = new URLSearchParams();
+  if (jobId)  qs.set('job_id', jobId);
+  if (planId) qs.set('plan_id', planId);
+  if (tipsId) qs.set('tips_id', tipsId);
+
+  const url = base + '?' + qs.toString();
+  btn.setAttribute('data-href', url);
+  btn.style.display = '';
+  btn.disabled = false;
+}
+
+function buildRestoreLink(
+  jobId  = (window.__mvJobID  || ""),
+  planId = (window.__mvPlanID || ""),
+  tipsId = (window.__mvTipsID || "")
+) {
+  const base = location.origin + location.pathname;
+  const qs = new URLSearchParams();
+  if (jobId)  qs.set("job_id", jobId);
   if (planId) qs.set("plan_id", planId);
   if (tipsId) qs.set("tips_id", tipsId);
   return qs.toString() ? `${base}?${qs.toString()}` : base;
-}
-   
+}   
 
   // -------------------------------
   // 4. Render itinerary (same logic)
@@ -1128,10 +1204,87 @@ function tryAutoRestore(ctx = {}) {
   const formRef       = ctx.form || document.getElementById("mv-form");
   const itineraryRoot = ctx.itineraryEl || document.getElementById("itinerary");
 
-  const params = new URLSearchParams(location.search || "");
-  const planId = params.get("plan_id") || params.get("planId") || params.get("planID") || "";
-  const tipsId = params.get("tips_id") || params.get("tipsId") || params.get("tipsID") || "";
-  if (!planId && !tipsId) return false;
+const params = new URLSearchParams(location.search || "");
+const jobId  = params.get("job_id") || params.get("jobId") || params.get("jobID") || "";
+const planId = params.get("plan_id") || params.get("planId") || params.get("planID") || "";
+const tipsId = params.get("tips_id") || params.get("tipsId") || params.get("tipsID") || "";
+
+// NEW: Firestore restore path
+if (jobId) {
+  mvClearPreviousOutput();
+  if (formRef) formRef.style.display = "none";
+  if (itineraryRoot) itineraryRoot.style.display = "block";
+  startProgress("Restoring job…");
+  showSkeleton(true);
+
+  window.__mvJobID = jobId;
+  updateSharePageButton();
+
+  (function ensureItinContainers(){
+    const wrap = itineraryRoot || document.getElementById("itinerary");
+    if (!wrap) return;
+    if (!wrap.querySelector("#mv-plan")) {
+      const d = document.createElement("div");
+      d.id = "mv-plan";
+      wrap.appendChild(d);
+    }
+    if (!wrap.querySelector("#mv-city-tips")) {
+      const d = document.createElement("div");
+      d.id = "mv-city-tips";
+      wrap.appendChild(d);
+    }
+  })();
+
+  // stop previous listener (if any)
+  try { window.__mvJobUnsub?.(); } catch (_) {}
+  window.__mvJobUnsub = await listenToJobDoc(jobId, async (job) => {
+    const status = String(job.status || "");
+    if (status === "queued")  setProgress(20, "Queued…");
+    if (status === "running") setProgress(45, "Generating…");
+
+    if (status === "error") {
+      showSkeleton(false);
+      endProgress();
+      showRestoreError(String(job.error || "Job failed"));
+      return;
+    }
+
+    if (status === "done") {
+      const input = job.input || {};
+      const result = job.result || {};
+      const itinerary = Array.isArray(result.itinerary) ? result.itinerary : [];
+      const day_tips  = (result.day_tips  && typeof result.day_tips  === "object") ? result.day_tips  : {};
+      const city_tips = (result.city_tips && typeof result.city_tips === "object") ? result.city_tips : {};
+
+      applyTipFocusSelection(input.tip_focus);
+
+      setProgress(70, "Rendering…");
+      showSkeleton(false);
+
+      renderItinerary(
+        { itinerary, recommendations: { per_day: day_tips, city_tips } },
+        input.city || "",
+        input.country || ""
+      );
+
+      setProgress(85, "Building map…");
+      try { buildEmbeddedMap?.(itinerary, input.city || "", input.country || ""); } catch (_){}
+
+      // keep email logic
+      window.__mvCityTips = city_tips;
+      trySendEmailIfReady();
+
+      setProgress(100, "Done");
+      endProgress();
+    }
+  });
+
+  return true;
+}
+
+// OLD fallback: plan_id / tips_id restore (your existing code)
+if (!planId && !tipsId) return false;
+
 
   // Prepare UI
   mvClearPreviousOutput();
@@ -1427,13 +1580,12 @@ showSkeleton(true);
      end_date: pick("end_date"),
      no_dates: fd.get("no_dates") ? "1" : "",
      stay_days: pick("stay_days"),
-     categories: pickAll("categories").join(","),
-     mobility: pickAll("mobility").join(","),
+     categories: pickAll("categories"),
+     mobility: pickAll("mobility"),
      companion_type: pick("companion_type"),
-     tip_focus: pickAll("tip_focus").join(","),
+     tip_focus: pickAll("tip_focus"),
      pace: pick("pace"),
-     budget_value: pick("budget_value"),
-     budget_currency: pick("budget_currency"),
+     budget: { value: pick("budget_value"), currency: pick("budget_currency") },
      duration_value: pick("duration_value"),
      duration_unit: pick("duration_unit"),
      start_daypart: pick("start_daypart"),
@@ -1474,214 +1626,93 @@ mvGaPage("/ai-itinerary/loading", "AI Itinerary Builder - Loading");
     (typeof ensureJsPDF === "function" ? ensureJsPDF() : Promise.resolve()).catch(()=>{})
   ]);
 
-  function toFD(obj) {
-    const fd = new FormData();
-    Object.entries(obj).forEach(([k,v]) => fd.append(k, v ?? ""));
-    return fd;
-  }
+  // === Create 1 async job in Cloud Run, then listen in Firestore ===
+setProgress(18, "Starting job…");
 
-  // === Fire BOTH requests (as you required):
-  // 1) plan -> itinerary + day_tips (they are related, same response)
-  // 2) city_tips -> city-level tips only
-  setProgress(18, "Sending requests…");
-       const tPlanReq = performance.now();
-       const tCityReq = tPlanReq;
+try {
+  // Convert your existing payload into the Cloud Run input format
+  // (This assumes you already changed payload fields in 4A: arrays + budget object)
+  const input = {
+    city: String(payload.city || "").trim(),
+    country: String(payload.country || "").trim(),
+    start_date: String(payload.start_date || "").trim(),
+    end_date: String(payload.end_date || "").trim(),
+    no_dates: !!payload.no_dates,
+    stay_days: String(payload.stay_days || "").trim(),
+    categories: Array.isArray(payload.categories) ? payload.categories : [],
+    mobility: Array.isArray(payload.mobility) ? payload.mobility : [],
+    companion_type: String(payload.companion_type || "").trim(),
+    tip_focus: Array.isArray(payload.tip_focus) ? payload.tip_focus : [],
+    pace: String(payload.pace || "").trim(),
+    budget: (payload.budget && typeof payload.budget === "object")
+      ? payload.budget
+      : { value: "", currency: "" },
+    extra_requests: String(payload.extra_requests || "").trim(),
+    email: String(payload.email || "").trim()
+  };
 
-  const pPlan = fetch(APPS_SCRIPT_URL, {
-  method: "POST",
-  body: toFD({ ...payload, mode: "plan" })
-})
-  .then(r => r.json())
-  .then(data => {
-    mvGaEvent("itinerary_api_response", {
-      mode: "plan",
-      ok: !!data?.success,
-      ms: Math.round(performance.now() - tPlanReq)
-    });
-    return data;
-  })
-  .catch(err => {
-    mvGaEvent("itinerary_api_error", {
-      mode: "plan",
-      error: String(err || "fetch_error").slice(0, 200),
-      ms: Math.round(performance.now() - tPlanReq)
-    });
-    throw err;
+  // 1) Create job
+  const jobId = await cloudRunCreateJob(input);
+  window.__mvJobID = jobId;
+  updateSharePageButton();
+
+  setProgress(30, "Queued…");
+
+  // 2) Listen to Firestore until done/error
+  try { window.__mvJobUnsub?.(); } catch (_) {}
+  window.__mvJobUnsub = await listenToJobDoc(jobId, async (job) => {
+    const s = String(job.status || "");
+
+    if (s === "queued")  setProgress(30, "Queued…");
+    if (s === "running") setProgress(50, "Generating…");
+
+    if (s === "error") {
+      showSkeleton(false);
+      endProgress();
+      statusEl.style.color = "red";
+      statusEl.textContent = "❌ " + (job.error || "Job failed");
+      return;
+    }
+
+    if (s === "done") {
+      const input2 = job.input || input;
+      const result = job.result || {};
+
+      const itineraryItems = Array.isArray(result.itinerary) ? result.itinerary : [];
+      const dayTips = (result.day_tips && typeof result.day_tips === "object") ? result.day_tips : {};
+      const cityTips = (result.city_tips && typeof result.city_tips === "object") ? result.city_tips : {};
+
+      applyTipFocusSelection(input2.tip_focus);
+
+      setProgress(70, "Rendering…");
+      showSkeleton(false);
+
+      renderItinerary(
+        { itinerary: itineraryItems, recommendations: { per_day: dayTips, city_tips: cityTips } },
+        input2.city || "",
+        input2.country || ""
+      );
+
+      setProgress(85, "Building map…");
+      try { await preloads; } catch (_){}
+      try { buildEmbeddedMap?.(itineraryItems, input2.city || "", input2.country || ""); } catch (_){}
+
+      window.__mvCityTips = cityTips;
+      trySendEmailIfReady();
+
+      setProgress(100, "Done");
+      endProgress();
+      statusEl.textContent = "";
+    }
   });
 
-const pCityTips = fetch(APPS_SCRIPT_URL, {
-  method: "POST",
-  body: toFD({ ...payload, mode: "city_tips" })
-})
-  .then(r => r.json())
-  .then(data => {
-    mvGaEvent("itinerary_api_response", {
-      mode: "city_tips",
-      ok: !!data?.success,
-      ms: Math.round(performance.now() - tCityReq)
-    });
-    return data;
-  })
-  .catch(err => {
-    mvGaEvent("itinerary_api_error", {
-      mode: "city_tips",
-      error: String(err || "fetch_error").slice(0, 200),
-      ms: Math.round(performance.now() - tCityReq)
-    });
-    throw err;
-  });
-   let planRendered = false;
-
-   let cityTipsAppended = false;
-
-  // === Process whichever arrives first, then append the other ===
-const handlePlan = async (planData) => {
-  const ok = planData && planData.success;
-   if (!ok) {
-  mvGaEvent("itinerary_error", {
-    stage: "plan",
-    error: String(planData?.error || "Plan error").slice(0, 200)
-  });
-  mvGaPage("/ai-itinerary/error", "AI Itinerary Builder - Error");
-
+} catch (err) {
   showSkeleton(false);
   endProgress();
   statusEl.style.color = "red";
-  statusEl.textContent = "❌ " + (planData?.error || "Plan error");
-  return;
+  statusEl.textContent = "❌ " + String(err?.message || err || "Failed to start job");
 }
 
-   window.__mvPlanID = (planData && planData.plan_id) ? String(planData.plan_id) : "";
-   updateSharePageButton();
-
-
-  setProgress(42, "Rendering itinerary…");
-  // skeleton is no longer needed once we can render something real
-  showSkeleton(false);
-
-  const itineraryItems = Array.isArray(planData.result?.itinerary)
-    ? planData.result.itinerary
-    : [];
-
-  const dayTips = (
-    planData.result &&
-    typeof planData.result.day_tips === "object"
-  )
-    ? planData.result.day_tips
-    : {};
-
-  // render the route + per-day tips
-  const combined = {
-    itinerary: itineraryItems,
-    recommendations: { per_day: dayTips }
-  };
-   
-   mvGaEvent("itinerary_generated", {
-  city: payload.city || "",
-  country: payload.country || ""
-   });
-   mvGaPage("/ai-itinerary/results", "AI Itinerary Builder - Results");
-   
-  renderItinerary(combined, payload.city, payload.country);
-
-  // map work
-  setProgress(62, "Building map…");
-  try { await preloads; } catch (_){}
-  try { buildEmbeddedMap?.(itineraryItems, payload.city, payload.country); } catch (_){}
-  setProgress(78, "Map ready");
-
-  // mark that the main plan view exists
-  planRendered = true;
-};
-
-
-
-const handleCity = async (cityTipsData) => {
-  if (!cityTipsData?.success) {
-    mvGaEvent("itinerary_error", {
-      stage: "city_tips",
-      error: String(cityTipsData?.error || "City tips error").slice(0, 200)
-    });
-    return;
-  }
-
-window.__mvTipsID = (cityTipsData && cityTipsData.tips_id) ? String(cityTipsData.tips_id) : "";
-updateSharePageButton();
-
-mvGaEvent("city_tips_ready", {
-  city: payload.city || "",
-  country: payload.country || ""
-});
-
-
-  const cityTips = (
-    cityTipsData.result &&
-    typeof cityTipsData.result.city_tips === "object"
-  )
-    ? cityTipsData.result.city_tips
-    : {};
-
-  // Don't render twice
-  if (cityTipsAppended) return;
-
-  // Progress bar feedback
-  if (!planRendered) {
-    // tips finished first
-    setProgress(42, "City tips ready…");
-  } else {
-    // plan already on screen, now we're enriching it
-    setProgress(88, "Adding city tips…");
-  }
-
-  // We are about to show real content, so the skeleton shouldn't block anymore
-  showSkeleton(false);
-
-  // Make sure the container exists
-  let tipsRoot = document.getElementById("mv-city-tips");
-  if (!tipsRoot) {
-    tipsRoot = document.createElement("div");
-    tipsRoot.id = "mv-city-tips";
-    tipsRoot.className = "mv-city-tips-section";
-    document.querySelector("#mv-results")?.appendChild(tipsRoot);
-  }
-
-
-  // Render tips RIGHT NOW (not later)
-   renderCityTipsIntoExistingContainer(tipsRoot, cityTips);
-   window.__mvCityTips = cityTips;
-   trySendEmailIfReady();
-
-
-   
-   cityTipsAppended = true;
-
-};
-
-
-
-
-// Paint the one that finishes first
-let planHandled = false;
-let cityHandled = false;
-
-// Paint whichever finishes first
-await Promise.race([
-  pPlan.then(d => { planHandled = true; return handlePlan(d); }),
-  pCityTips.then(d => { cityHandled = true; return handleCity(d); })
-]);
-
-// Then paint whichever is still pending (only once)
-if (!planHandled) {
-  await pPlan.then(handlePlan).catch(()=>{});
-}
-if (!cityHandled) {
-  await pCityTips.then(handleCity).catch(()=>{});
-}
-
-
-setProgress(96, "Final touches…");
-endProgress();
-statusEl.textContent = "";
 
 });
 

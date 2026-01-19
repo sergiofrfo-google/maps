@@ -1,7 +1,7 @@
-/* === CityRoute App (externalized) === NOTE: same URLs, keys, and functions as your Pagelayer inline version. We just initialize AFTER the HTML is injected. */ 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"; 
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"; 
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
 
 (() => {
   "use strict";
